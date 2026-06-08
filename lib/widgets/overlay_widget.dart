@@ -16,7 +16,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   @override
   void initState() {
     super.initState();
-    OverlayStream.messageStream.stream.listen(_onMessage);
+    FlutterOverlayWindow.overlayListener.listen(_onMessage);
   }
 
   void _onMessage(String raw) {

@@ -46,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _send(Map<String, dynamic> msg) {
-    FlutterOverlayWindow.sendMessage(jsonEncode(msg));
+    FlutterOverlayWindow.shareData(jsonEncode(msg));
   }
 
   void _showOverlay() async {
