@@ -41,8 +41,8 @@ class DayCounterWidgetProvider : AppWidgetProvider() {
         ) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val countersJson = prefs.getString("counters", "[]") ?: "[]"
-            val label: String
-            val daysText: String
+            var label: String
+            var daysText: String
 
             try {
                 val arr = org.json.JSONArray(countersJson)
@@ -59,8 +59,10 @@ class DayCounterWidgetProvider : AppWidgetProvider() {
                         val nowMs = System.currentTimeMillis()
                         val diffMs = targetMs - nowMs
                         val days = (diffMs / (1000L * 60 * 60 * 24)).toInt()
-                        daysText = if (days >= 0) "$days day${if (days != 1) "s" else ""} left"
-                                   else "${-days} day${if (days != -1) "s" else ""} ago"
+                        val absDays = if (days >= 0) days else -days
+                        val s = if (absDays != 1) "s" else ""
+                        daysText = if (days >= 0) "$absDays day$s left"
+                                   else "$absDays day$s ago"
                     }
                 } else {
                     label = "No counters"
