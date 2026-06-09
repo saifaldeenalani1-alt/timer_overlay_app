@@ -101,46 +101,34 @@ class _OverlayWidgetState extends State<OverlayWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (_timers.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+    if (_timers.isEmpty) return const SizedBox.shrink();
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.black87.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: _timers.map((t) => _TimerRow(
-              data: t,
-              time: _timeFor(t),
-              onTap: () => _toggle(t['id'] as String),
-              onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
-            )).toList(),
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: _timers.map((t) => GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _toggle(t['id'] as String),
+            onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
+            child: _TimerContent(data: t, time: _timeFor(t)),
+          )).toList(),
         ),
       ),
     );
   }
 }
 
-class _TimerRow extends StatelessWidget {
+class _TimerContent extends StatelessWidget {
   final Map<String, dynamic> data;
   final String time;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
 
-  const _TimerRow({
-    required this.data,
-    required this.time,
-    required this.onTap,
-    required this.onLongPress,
-  });
+  const _TimerContent({required this.data, required this.time});
 
   @override
   Widget build(BuildContext context) {
@@ -150,30 +138,25 @@ class _TimerRow extends StatelessWidget {
     final fontSize = (data['fontSize'] as num?)?.toDouble() ?? 16.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
-              color: fgColor, size: fontSize * 0.9,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
+            color: fgColor, size: fontSize * 0.9,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            time,
+            style: TextStyle(
+              color: fgColor,
+              fontSize: fontSize,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
             ),
-            const SizedBox(width: 4),
-            Text(
-              time,
-              style: TextStyle(
-                color: fgColor,
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'monospace',
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

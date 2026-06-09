@@ -64,13 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   int _overlayWidth() {
-    final visible = _timers.where((t) => t.showInOverlay).toList();
-    if (visible.isEmpty) return 200;
-    int total = 16;
-    for (final t in visible) {
-      total += (12 + t.fontSize * 6.4).round();
-    }
-    return total.clamp(80, 600);
+    return 500;
   }
 
   int _overlayHeight() {
@@ -80,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
     for (final t in visible) {
       if (t.fontSize > maxFs) maxFs = t.fontSize;
     }
-    return (12 + maxFs * 1.4).round().clamp(40, 120);
+    return (20 + maxFs * 1.6).round().clamp(40, 120);
   }
 
   void _startStopTimer() {
@@ -119,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
       config: OverlayConfig(
         width: _overlayWidth(),
         height: _overlayHeight(),
-        isDraggable: false,
+        isDraggable: true,
         alignment: OverlayAlignment.topCenter,
       ),
       data: _overlayData(),
@@ -204,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
       config: OverlayConfig(
         width: _overlayWidth(),
         height: _overlayHeight(),
-        isDraggable: false,
+        isDraggable: true,
         alignment: OverlayAlignment.topCenter,
       ),
       data: _overlayData(),
