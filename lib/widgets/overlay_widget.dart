@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:flutter_screen_overlay/flutter_screen_overlay.dart';
 
 class OverlayWidget extends StatefulWidget {
   const OverlayWidget({super.key});
@@ -16,7 +16,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   @override
   void initState() {
     super.initState();
-    FlutterOverlayWindow.overlayListener.listen(_onMessage);
+    FlutterScreenOverlay.overlayListener.listen(_onMessage);
   }
 
   void _onMessage(dynamic raw) {
@@ -63,7 +63,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
                 if (!_minimized) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => FlutterOverlayWindow.closeOverlay(),
+                    onTap: () => FlutterScreenOverlay.closeOverlay(),
                     child: const Icon(Icons.close, color: Colors.white54, size: 16),
                   ),
                 ],

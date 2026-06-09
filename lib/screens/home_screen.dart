@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:flutter_screen_overlay/flutter_screen_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,8 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _requestOverlayPermission() async {
-    if (!await FlutterOverlayWindow.isPermissionGranted()) {
-      await FlutterOverlayWindow.requestPermission();
+    if (!await FlutterScreenOverlay.isPermissionGranted()) {
+      await FlutterScreenOverlay.requestPermission();
     }
   }
 
@@ -46,11 +46,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _send(Map<String, dynamic> msg) {
-    FlutterOverlayWindow.shareData(jsonEncode(msg));
+    FlutterScreenOverlay.shareData(jsonEncode(msg));
   }
 
   void _showOverlay() async {
-    await FlutterOverlayWindow.showOverlay(
+    await FlutterScreenOverlay.showOverlay(
       height: 60,
       width: 210,
       enableDrag: true,
@@ -61,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _hideOverlay() async {
-    await FlutterOverlayWindow.closeOverlay();
+    await FlutterScreenOverlay.closeOverlay();
     setState(() {
       _overlayVisible = false;
       _running = false;

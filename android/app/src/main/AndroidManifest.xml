@@ -10,7 +10,6 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- Main activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -28,17 +27,14 @@
             </intent-filter>
         </activity>
 
-        <!-- Overlay activity (auto-registered by flutter_overlay_window) -->
-        <activity
-            android:name="com.onesignal.flutteroverlaywindow.OverlayActivity"
+        <service
+            android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.NoActionBar"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:taskAffinity=""
-            android:excludeFromRecents="true"
-            android:showWhenLocked="false"
-            android:turnScreenOn="false" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating timer overlay for counting up/down above other apps" />
+        </service>
 
         <meta-data
             android:name="flutter_overlay_window"

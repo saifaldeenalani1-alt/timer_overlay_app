@@ -19,12 +19,16 @@ jobs:
       - name: Generate platform files
         run: |
           cd ..
-          flutter create --project-name timer_overlay_app --org com.timer timer_overlay_app_temp
-          cp -r timer_overlay_app_temp/android timer_overlay_app/
-          cp -r timer_overlay_app_temp/ios timer_overlay_app/ 2>/dev/null || true
-          cp -r timer_overlay_app_temp/web timer_overlay_app/ 2>/dev/null || true
-          cp timer_overlay_app_temp/analysis_options.yaml timer_overlay_app/ 2>/dev/null || true
-          cd timer_overlay_app
+          flutter create --project-name timer_overlay_app --org com.timer temp_project
+          # copy generated android files (gradle, build config) but keep our AndroidManifest
+          mv timer_overlay_app/android timer_overlay_app/android_repo
+          cp -r temp_project/android timer_overlay_app/android
+          cp -r temp_project/ios timer_overlay_app/ 2>/dev/null || true
+          cp -r temp_project/web timer_overlay_app/ 2>/dev/null || true
+          cp temp_project/analysis_options.yaml timer_overlay_app/ 2>/dev/null || true
+          # restore our custom AndroidManifest
+          cp timer_overlay_app/android_repo/app/src/main/AndroidManifest.xml timer_overlay_app/android/app/src/main/AndroidManifest.xml
+          rm -rf timer_overlay_app/android_repo
 
       - run: flutter pub get
       - run: flutter build apk --release
