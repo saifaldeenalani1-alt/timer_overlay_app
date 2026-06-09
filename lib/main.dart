@@ -6,9 +6,12 @@ import 'widgets/overlay_widget.dart';
 @pragma('vm:entry-point')
 void overlayMain() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MaterialApp(
+  runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: OverlayWidget(),
+    home: Scaffold(
+      backgroundColor: Colors.transparent,
+      body: OverlayWidget(),
+    ),
   ));
 }
 
