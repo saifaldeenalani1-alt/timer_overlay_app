@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screen_overlay/flutter_screen_overlay.dart';
 import 'screens/home_screen.dart';
 import 'widgets/overlay_widget.dart';
 

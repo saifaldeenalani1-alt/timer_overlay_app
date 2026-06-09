@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_screen_overlay/flutter_screen_overlay.dart';
+import 'package:flutter_custom_overlay/flutter_custom_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,17 +17,17 @@ class _HomeScreenState extends State<HomeScreen> {
   int _elapsed = 0;
   Timer? _timer;
   bool _running = false;
-  bool _overlayVisible = false;
+  bool _overlayActive = false;
 
   @override
   void initState() {
     super.initState();
-    _requestOverlayPermission();
+    _checkPermission();
   }
 
-  Future<void> _requestOverlayPermission() async {
-    if (!await FlutterScreenOverlay.isPermissionGranted()) {
-      await FlutterScreenOverlay.requestPermission();
+  Future<void> _checkPermission() async {
+    if (!await FlutterCustomOverlay.hasOverlayPermission()) {
+      await FlutterCustomOverlay.requestOverlayPermission();
     }
   }
 
@@ -46,24 +45,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _send(Map<String, dynamic> msg) {
-    FlutterScreenOverlay.shareData(jsonEncode(msg));
+    FlutterCustomOverlay.shareData(msg);
   }
 
-  void _showOverlay() async {
-    await FlutterScreenOverlay.showOverlay(
-      height: 60,
+  Future<void> _showOverlay([Map<String, dynamic>? data]) async {
+    final config = OverlayConfig(
       width: 210,
-      enableDrag: true,
-      overlayTitle: 'Timer',
-      flag: OverlayFlag.defaultFlag,
+      height: 60,
+      isDraggable: true,
+      alignment: OverlayAlignment.topCenter,
     );
-    setState(() => _overlayVisible = true);
+    await FlutterCustomOverlay.showOverlay(config: config, data: data);
+    setState(() => _overlayActive = true);
   }
 
   void _hideOverlay() async {
-    await FlutterScreenOverlay.closeOverlay();
+    await FlutterCustomOverlay.closeOverlay();
     setState(() {
-      _overlayVisible = false;
+      _overlayActive = false;
       _running = false;
       _timer?.cancel();
     });
@@ -72,27 +71,28 @@ class _HomeScreenState extends State<HomeScreen> {
   void _toggle() {
     if (_running) {
       _timer?.cancel();
-      _send({'action': 'stop'});
+      setState(() => _running = false);
     } else {
-      if (!_overlayVisible) _showOverlay();
-      _send({
-        'action': 'start',
-        'mode': _countUp ? 'up' : 'down',
-        'total': _total,
-      });
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (!mounted) return;
-        setState(() {
-          _elapsed++;
-          if (!_countUp && _elapsed >= _total) {
-            _timer?.cancel();
-            _running = false;
-          }
-        });
-        _send({'action': 'tick', 'time': _fmt(_display)});
-      });
+      _start();
     }
-    setState(() => _running = !_running);
+  }
+
+  Future<void> _start() async {
+    if (!_overlayActive) {
+      await _showOverlay({'action': 'start', 'mode': _countUp ? 'up' : 'down', 'total': _total});
+    }
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _elapsed++;
+        if (!_countUp && _elapsed >= _total) {
+          _timer?.cancel();
+          _running = false;
+        }
+      });
+      _send({'action': 'tick', 'time': _fmt(_display)});
+    });
+    setState(() => _running = true);
   }
 
   void _reset() {
@@ -165,9 +165,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 16),
             TextButton.icon(
-              onPressed: _overlayVisible ? _hideOverlay : _showOverlay,
-              icon: Icon(_overlayVisible ? Icons.visibility_off_rounded : Icons.visibility_rounded),
-              label: Text(_overlayVisible ? 'Hide Overlay' : 'Show Overlay'),
+              onPressed: _overlayActive ? _hideOverlay : _showOverlay,
+              icon: Icon(_overlayActive ? Icons.visibility_off_rounded : Icons.visibility_rounded),
+              label: Text(_overlayActive ? 'Hide Overlay' : 'Show Overlay'),
             ),
             const SizedBox(height: 32),
           ],

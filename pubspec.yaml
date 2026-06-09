@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_screen_overlay: ^1.0.4
+  flutter_custom_overlay: ^0.2.1
 
 dev_dependencies:
   flutter_test:

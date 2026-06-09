@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_screen_overlay/flutter_screen_overlay.dart';
+import 'package:flutter_custom_overlay/flutter_custom_overlay.dart';
 
 class OverlayWidget extends StatefulWidget {
   const OverlayWidget({super.key});
@@ -16,59 +15,54 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   @override
   void initState() {
     super.initState();
-    FlutterScreenOverlay.overlayListener.listen(_onMessage);
-  }
-
-  void _onMessage(dynamic raw) {
-    try {
-      final data = jsonDecode(raw as String) as Map<String, dynamic>;
-      final action = data['action'] as String?;
-      if (action == 'tick') {
-        setState(() => _time = data['time'] as String? ?? _time);
-      } else if (action == 'reset') {
-        setState(() => _time = '00:00:00');
+    OverlayMessenger.listen();
+    OverlayMessenger.onDataReceived.listen((event) {
+      if (event is Map<String, dynamic>) {
+        final action = event['action'] as String?;
+        if (action == 'tick') {
+          setState(() => _time = event['time'] as String? ?? _time);
+        } else if (action == 'reset') {
+          setState(() => _time = '00:00:00');
+        }
       }
-    } catch (_) {}
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Material(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(20),
-        child: GestureDetector(
-          onTap: () => setState(() => _minimized = !_minimized),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.timer_outlined, color: Colors.white, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  _time,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                  ),
+    return Material(
+      color: Colors.black54,
+      borderRadius: BorderRadius.circular(20),
+      child: GestureDetector(
+        onTap: () => setState(() => _minimized = !_minimized),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.timer_outlined, color: Colors.white, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                _time,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'monospace',
                 ),
-                if (!_minimized) ...[
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => FlutterScreenOverlay.closeOverlay(),
-                    child: const Icon(Icons.close, color: Colors.white54, size: 16),
-                  ),
-                ],
+              ),
+              if (!_minimized) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => FlutterCustomOverlay.hideOverlay(),
+                  child: const Icon(Icons.close, color: Colors.white54, size: 16),
+                ),
               ],
-            ),
+            ],
           ),
         ),
       ),
