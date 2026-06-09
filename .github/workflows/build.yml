@@ -42,27 +42,8 @@ jobs:
           sed -i 's|</application>|<receiver android:name=".DayCounterWidgetProvider" android:exported="true">\n<intent-filter>\n<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />\n</intent-filter>\n<meta-data android:name="android.appwidget.provider" android:resource="@xml/day_counter_info" />\n</receiver>\n</application>|' AndroidManifest.xml
 
       - run: flutter pub get
-      - name: Run flutter tests
-        continue-on-error: true
-        run: |
-          set +eo pipefail
-          flutter test test/overlay_test.dart --reporter expanded 2>&1 | tee test_output.log
-          exit_code=${PIPESTATUS[0]}
-          echo "exit_code=$exit_code" >> $GITHUB_ENV
-          python3 << 'PYEOF'
-          import re, sys
-          with open('test_output.log') as f:
-              content = f.read()
-          failures = []
-          for i, line in enumerate(content.split('\n')):
-              if 'FAILED' in line or 'error' in line.lower() or 'Expected' in line or 'Actual' in line or 'expected' in line.lower():
-                  failures.append((i+1, line.strip()))
-          for n, line in failures[:20]:
-              print(f'::error file=test/overlay_test.dart,line={n}::{line[:300]}')
-          PYEOF
-          exit $exit_code
+      - run: flutter test
       - run: flutter build apk --release
-        if: env.exit_code == '0'
 
       - uses: actions/upload-artifact@v4
         with:
