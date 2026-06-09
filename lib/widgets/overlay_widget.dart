@@ -61,30 +61,31 @@ class _OverlayWidgetState extends State<OverlayWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (_timers.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
         margin: const EdgeInsets.all(4),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: _timers.isEmpty ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: Colors.black87.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: _timers.map((t) => _TimerRow(
-              data: t,
-              onTap: () => _toggle(t['id'] as String),
-              onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
-            )).toList(),
-          ),
-        ),
+        child: _timers.isEmpty
+            ? const Center(child: Padding(
+                padding: EdgeInsets.all(12),
+                child: Text('No timers', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              ))
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: _timers.map((t) => _TimerRow(
+                    data: t,
+                    onTap: () => _toggle(t['id'] as String),
+                    onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
+                  )).toList(),
+                ),
+              ),
       ),
     );
   }

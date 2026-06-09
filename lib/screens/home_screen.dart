@@ -122,30 +122,39 @@ class _HomeScreenState extends State<HomeScreen> {
     _syncOverlay();
   }
 
-  int _calcOverlayHeight(List<TimerItem> visible) {
-    final perTimer = 40;
-    final padding = 30;
-    return (perTimer * visible.length + padding).clamp(80, 350);
-  }
-
   Future<void> _showOverlay() async {
     final visible = _timers.where((t) => t.showInOverlay).toList();
-    if (visible.isEmpty) return;
+    if (visible.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No timers visible in overlay')),
+        );
+      }
+      return;
+    }
     final ok = await FlutterCustomOverlay.showOverlay(
       config: OverlayConfig(
         width: 260,
-        height: _calcOverlayHeight(visible),
+        height: 300,
         isDraggable: true,
         alignment: OverlayAlignment.topCenter,
       ),
+      data: {
+        'action': 'state',
+        'timers': visible.map((t) => t.toMap()).toList(),
+      },
     );
     if (ok) {
       setState(() => _overlayActive = true);
-      await Future.delayed(const Duration(milliseconds: 700));
       _syncOverlay();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Overlay shown'), duration: Duration(seconds: 1)),
+        );
+      }
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to show overlay')),
+        const SnackBar(content: Text('Permission not granted or overlay failed')),
       );
     }
   }
