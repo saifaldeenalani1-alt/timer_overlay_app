@@ -15,7 +15,7 @@ class TimerItem {
   Color color;
   Color textColor;
   double opacity;
-  double sizeScale;
+  double fontSize;
   bool alertOnEnd;
   bool showInOverlay;
 
@@ -31,7 +31,7 @@ class TimerItem {
     this.color = Colors.indigo,
     this.textColor = Colors.white,
     this.opacity = 0.7,
-    this.sizeScale = 1.0,
+    this.fontSize = 16.0,
     this.alertOnEnd = false,
     this.showInOverlay = true,
   });
@@ -55,7 +55,7 @@ class TimerItem {
     'color': color.toARGB32(),
     'textColor': textColor.toARGB32(),
     'opacity': opacity,
-    'sizeScale': sizeScale,
+    'fontSize': fontSize,
   };
 
   void cancelTimer() {

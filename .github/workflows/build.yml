@@ -24,6 +24,11 @@ jobs:
           cp -r temp_project/ios timer_overlay_app/ 2>/dev/null || true
           cp -r temp_project/web timer_overlay_app/ 2>/dev/null || true
 
+      - name: Add overlay permissions to AndroidManifest
+        run: |
+          cd android/app/src/main
+          sed -i 's|</manifest>|<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>\n<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n</manifest>|' AndroidManifest.xml
+
       - run: flutter pub get
       - run: flutter build apk --release
 

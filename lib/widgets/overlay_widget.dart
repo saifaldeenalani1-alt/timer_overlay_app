@@ -11,7 +11,6 @@ class OverlayWidget extends StatefulWidget {
 
 class _OverlayWidgetState extends State<OverlayWidget> {
   List<Map<String, dynamic>> _timers = [];
-  bool _minimized = false;
   StreamSubscription? _sub;
 
   @override
@@ -68,21 +67,19 @@ class _OverlayWidgetState extends State<OverlayWidget> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: GestureDetector(
-        onTap: () => setState(() => _minimized = !_minimized),
-        child: Container(
-          margin: const EdgeInsets.all(4),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black87.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(16),
-          ),
+      body: Container(
+        margin: const EdgeInsets.all(4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black87.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: _timers.map((t) => _TimerRow(
               data: t,
-              minimized: _minimized,
               onTap: () => _toggle(t['id'] as String),
               onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
             )).toList(),
@@ -95,13 +92,11 @@ class _OverlayWidgetState extends State<OverlayWidget> {
 
 class _TimerRow extends StatelessWidget {
   final Map<String, dynamic> data;
-  final bool minimized;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
   const _TimerRow({
     required this.data,
-    required this.minimized,
     required this.onTap,
     required this.onLongPress,
   });
@@ -112,6 +107,7 @@ class _TimerRow extends StatelessWidget {
     final fgColor = Color(data['textColor'] as int);
     final running = data['running'] as bool? ?? false;
     final finished = data['finished'] as bool? ?? false;
+    final fontSize = (data['fontSize'] as num?)?.toDouble() ?? 16.0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -129,18 +125,14 @@ class _TimerRow extends StatelessWidget {
             children: [
               Icon(
                 finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
-                color: fgColor, size: 14,
+                color: fgColor, size: fontSize * 0.9,
               ),
-              const SizedBox(width: 4),
-              if (!minimized) ...[
-                Text(data['name'] as String? ?? '', style: TextStyle(color: fgColor, fontSize: 11)),
-                const SizedBox(width: 6),
-              ],
+              const SizedBox(width: 6),
               Text(
                 data['time'] as String? ?? '00:00:00',
                 style: TextStyle(
                   color: finished ? Colors.black : fgColor,
-                  fontSize: 16,
+                  fontSize: fontSize,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'monospace',
                 ),

@@ -39,12 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final action = event['action'] as String?;
       final id = event['id'] as String?;
       if (action == 'toggle' && id != null) {
-        final timer = _timers.cast<TimerItem?>().firstWhere((t) => t?.id == id, orElse: () => null);
-        if (timer != null) {
-          timer.cancelTimer();
-          setState(() {});
-          _syncOverlay();
-        }
+        final timer = _timers.where((t) => t.id == id).firstOrNull;
+        if (timer != null) _toggleTimer(timer);
       } else if (action == 'remove' && id != null) {
         final idx = _timers.indexWhere((t) => t.id == id);
         if (idx >= 0) {
@@ -64,10 +60,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _syncOverlay() {
     final visible = _timers.where((t) => t.showInOverlay).toList();
-    FlutterCustomOverlay.shareData({
-      'action': 'state',
-      'timers': visible.map((t) => t.toMap()).toList(),
-    });
+    try {
+      FlutterCustomOverlay.shareData({
+        'action': 'state',
+        'timers': visible.map((t) => t.toMap()).toList(),
+      });
+    } catch (_) {}
 
     if (_timers.any((t) => t.running)) {
       _updateTimer ??= Timer.periodic(const Duration(seconds: 1), (_) => _tick());
@@ -124,27 +122,35 @@ class _HomeScreenState extends State<HomeScreen> {
     _syncOverlay();
   }
 
+  int _calcOverlayHeight(List<TimerItem> visible) {
+    final perTimer = 40;
+    final padding = 30;
+    return (perTimer * visible.length + padding).clamp(80, 350);
+  }
+
   Future<void> _showOverlay() async {
     final visible = _timers.where((t) => t.showInOverlay).toList();
+    if (visible.isEmpty) return;
     final ok = await FlutterCustomOverlay.showOverlay(
       config: OverlayConfig(
         width: 260,
-        height: 300,
+        height: _calcOverlayHeight(visible),
         isDraggable: true,
         alignment: OverlayAlignment.topCenter,
       ),
-      data: {
-        'action': 'state',
-        'timers': visible.map((t) => t.toMap()).toList(),
-      },
     );
     if (ok) {
       setState(() => _overlayActive = true);
+      await Future.delayed(const Duration(milliseconds: 700));
       _syncOverlay();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to show overlay')),
+      );
     }
   }
 
-  void _hideOverlay() async {
+  Future<void> _hideOverlay() async {
     await FlutterCustomOverlay.closeOverlay();
     _updateTimer?.cancel();
     _updateTimer = null;
@@ -163,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
     var color = existing?.color ?? Colors.indigo;
     var textColor = existing?.textColor ?? Colors.white;
     var opacity = existing?.opacity ?? 0.7;
-    var sizeScale = existing?.sizeScale ?? 1.0;
+    var fontSize = existing?.fontSize ?? 16.0;
     var alertOnEnd = existing?.alertOnEnd ?? false;
     var showInOverlay = existing?.showInOverlay ?? true;
 
@@ -212,9 +218,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text('${(opacity * 100).toInt()}%', style: const TextStyle(fontSize: 11)),
                 ]),
                 Row(children: [
-                  const Text('Size', style: TextStyle(fontSize: 12)),
-                  Expanded(child: Slider(value: sizeScale, min: 0.5, max: 2.0, onChanged: (v) => setDialogState(() => sizeScale = v))),
-                  Text('${(sizeScale * 100).toInt()}%', style: const TextStyle(fontSize: 11)),
+                  const Text('Font Size', style: TextStyle(fontSize: 12)),
+                  Expanded(child: Slider(value: fontSize, min: 10, max: 48, onChanged: (v) => setDialogState(() => fontSize = v))),
+                  Text('${fontSize.toInt()}', style: const TextStyle(fontSize: 11)),
                 ]),
                 SwitchListTile(
                   title: const Text('Alert on End', style: TextStyle(fontSize: 12)),
@@ -229,6 +235,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   onChanged: (v) => setDialogState(() => showInOverlay = v),
                   contentPadding: EdgeInsets.zero,
                   dense: true,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black87.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.play_arrow, color: textColor, size: fontSize * 0.9),
+                    const SizedBox(width: 6),
+                    Text('00:00:00', style: TextStyle(color: textColor, fontSize: fontSize, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                  ]),
                 ),
               ],
             ),
@@ -246,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   existing.color = color;
                   existing.textColor = textColor;
                   existing.opacity = opacity;
-                  existing.sizeScale = sizeScale;
+                  existing.fontSize = fontSize;
                   existing.alertOnEnd = alertOnEnd;
                   existing.showInOverlay = showInOverlay;
                 } else {
@@ -260,13 +279,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: color,
                     textColor: textColor,
                     opacity: opacity,
-                    sizeScale: sizeScale,
+                    fontSize: fontSize,
                     alertOnEnd: alertOnEnd,
                     showInOverlay: showInOverlay,
                   ));
                 }
                 Navigator.pop(ctx);
                 setState(() {});
+                _syncOverlay();
               },
               child: Text(isEdit ? 'Save' : 'Add'),
             ),
@@ -450,6 +470,7 @@ class _ColorPicker extends StatelessWidget {
   final ValueChanged<Color> onChanged;
 
   static const _colors = [
+    Colors.white,
     Colors.indigo,
     Colors.blue,
     Colors.teal,
@@ -466,6 +487,7 @@ class _ColorPicker extends StatelessWidget {
     Colors.lime,
     Colors.cyan,
     Colors.deepPurple,
+    Colors.black,
   ];
 
   const _ColorPicker({required this.selected, required this.onChanged});
@@ -483,7 +505,9 @@ class _ColorPicker extends StatelessWidget {
           decoration: BoxDecoration(
             color: c,
             shape: BoxShape.circle,
-            border: c == selected ? Border.all(color: Colors.white, width: 3) : null,
+            border: c == selected
+                ? Border.all(color: c == Colors.white ? Colors.black : Colors.white, width: 3)
+                : (c == Colors.white ? Border.all(color: Colors.grey.shade400, width: 1) : null),
           ),
         ),
       )).toList(),
