@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
     for (final t in visible) {
       if (t.fontSize > maxFs) maxFs = t.fontSize;
     }
-    return (maxFs * 1.6 + 8).round().clamp(36, 100);
+    return (maxFs * 1.4 + 28).round().clamp(48, 120);
   }
 
   void _startStopTimer() {
