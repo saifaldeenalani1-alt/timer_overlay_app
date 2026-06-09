@@ -26,8 +26,8 @@ void main() {
 
   group('TimerContent rendering', () {
     testWidgets('shows play icon when not running', (tester) async {
-      await tester.pumpWidget(Material(
-        child: _TimerContent(
+      await tester.pumpWidget(MaterialApp(
+        home: _TimerContent(
           data: {
             'id': 't1',
             'name': 'Test',
@@ -44,8 +44,8 @@ void main() {
     });
 
     testWidgets('shows pause icon when running', (tester) async {
-      await tester.pumpWidget(Material(
-        child: _TimerContent(
+      await tester.pumpWidget(MaterialApp(
+        home: _TimerContent(
           data: {
             'id': 't1',
             'name': 'Test',
@@ -62,8 +62,8 @@ void main() {
     });
 
     testWidgets('shows notification icon when finished', (tester) async {
-      await tester.pumpWidget(Material(
-        child: _TimerContent(
+      await tester.pumpWidget(MaterialApp(
+        home: _TimerContent(
           data: {
             'id': 't1',
             'name': 'Test',
