@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_custom_overlay/flutter_custom_overlay.dart';
+import '../models/timer_item.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,19 +11,49 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _countUp = true;
-  int _hours = 0;
-  int _minutes = 1;
-  int _seconds = 0;
-  int _elapsed = 0;
-  Timer? _timer;
-  bool _running = false;
+  final List<TimerItem> _timers = [];
+  int _nextId = 1;
   bool _overlayActive = false;
+  Timer? _updateTimer;
+  StreamSubscription? _overlaySub;
 
   @override
   void initState() {
     super.initState();
     _checkPermission();
+    _overlaySub = FlutterCustomOverlay.overlayStream.listen(_onOverlayMessage);
+  }
+
+  @override
+  void dispose() {
+    _updateTimer?.cancel();
+    _overlaySub?.cancel();
+    for (final t in _timers) {
+      t.dispose();
+    }
+    super.dispose();
+  }
+
+  void _onOverlayMessage(dynamic event) {
+    if (event is Map<String, dynamic>) {
+      final action = event['action'] as String?;
+      final id = event['id'] as String?;
+      if (action == 'toggle' && id != null) {
+        final timer = _timers.cast<TimerItem?>().firstWhere((t) => t?.id == id, orElse: () => null);
+        timer?.cancelTimer();
+        if (timer != null) {
+          setState(() {});
+          _syncOverlay();
+        }
+      } else if (action == 'remove' && id != null) {
+        final idx = _timers.indexWhere((t) => t.id == id);
+        if (idx >= 0) {
+          _timers[idx].dispose();
+          setState(() => _timers.removeAt(idx));
+          _syncOverlay();
+        }
+      }
+    }
   }
 
   Future<void> _checkPermission() async {
@@ -31,83 +62,198 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  int get _total => _hours * 3600 + _minutes * 60 + _seconds;
+  void _syncOverlay() {
+    final anyRunning = _timers.any((t) => t.running);
+    final data = {
+      'action': 'state',
+      'timers': _timers.map((t) => t.toMap()).toList(),
+    };
+    FlutterCustomOverlay.shareData(data);
 
-  int get _display => _countUp
-      ? _elapsed
-      : (_total - _elapsed).clamp(0, _total);
-
-  String _fmt(int sec) {
-    final h = (sec ~/ 3600).toString().padLeft(2, '0');
-    final m = ((sec % 3600) ~/ 60).toString().padLeft(2, '0');
-    final s = (sec % 60).toString().padLeft(2, '0');
-    return '$h:$m:$s';
+    if (anyRunning) {
+      _updateTimer ??= Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    } else {
+      _updateTimer?.cancel();
+      _updateTimer = null;
+    }
   }
 
-  void _send(Map<String, dynamic> msg) {
-    FlutterCustomOverlay.shareData(msg);
+  void _tick() {
+    if (!mounted) return;
+    for (final t in _timers) {
+      if (t.running) {
+        t.elapsed++;
+        if (t.isFinished) {
+          t.cancelTimer();
+        }
+      }
+    }
+    setState(() {});
+    _syncOverlay();
+
+    if (!_timers.any((t) => t.running)) {
+      _updateTimer?.cancel();
+      _updateTimer = null;
+    }
   }
 
-  Future<void> _showOverlay([Map<String, dynamic>? data]) async {
+  void _toggleTimer(TimerItem t) {
+    if (t.running) {
+      t.cancelTimer();
+    } else {
+      t.running = true;
+    }
+    setState(() {});
+    _syncOverlay();
+  }
+
+  void _removeTimer(TimerItem t) {
+    t.dispose();
+    setState(() => _timers.remove(t));
+    _syncOverlay();
+  }
+
+  void _resetTimer(TimerItem t) {
+    t.elapsed = 0;
+    t.cancelTimer();
+    setState(() {});
+    _syncOverlay();
+  }
+
+  Future<void> _showOverlay() async {
     final config = OverlayConfig(
-      width: 210,
-      height: 60,
+      width: 260,
+      height: 300,
       isDraggable: true,
       alignment: OverlayAlignment.topCenter,
     );
-    await FlutterCustomOverlay.showOverlay(config: config, data: data);
-    setState(() => _overlayActive = true);
+    final ok = await FlutterCustomOverlay.showOverlay(config: config);
+    if (ok) {
+      setState(() => _overlayActive = true);
+      _syncOverlay();
+    }
   }
 
   void _hideOverlay() async {
     await FlutterCustomOverlay.closeOverlay();
-    setState(() {
-      _overlayActive = false;
-      _running = false;
-      _timer?.cancel();
-    });
+    _updateTimer?.cancel();
+    _updateTimer = null;
+    setState(() => _overlayActive = false);
   }
 
-  void _toggle() {
-    if (_running) {
-      _timer?.cancel();
-      setState(() => _running = false);
-    } else {
-      _start();
-    }
-  }
+  void _addTimer() => _showTimerDialog();
 
-  Future<void> _start() async {
-    if (!_overlayActive) {
-      await _showOverlay({'action': 'start', 'mode': _countUp ? 'up' : 'down', 'total': _total});
-    }
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() {
-        _elapsed++;
-        if (!_countUp && _elapsed >= _total) {
-          _timer?.cancel();
-          _running = false;
-        }
-      });
-      _send({'action': 'tick', 'time': _fmt(_display)});
-    });
-    setState(() => _running = true);
-  }
+  void _showTimerDialog({TimerItem? existing}) {
+    final isEdit = existing != null;
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    var countUp = existing?.countUp ?? true;
+    var hours = existing?.hours ?? 0;
+    var minutes = existing?.minutes ?? 1;
+    var seconds = existing?.seconds ?? 0;
+    var color = existing?.color ?? Colors.indigo;
+    var textColor = existing?.textColor ?? Colors.white;
+    var opacity = existing?.opacity ?? 0.7;
+    var sizeScale = existing?.sizeScale ?? 1.0;
+    var alertOnEnd = existing?.alertOnEnd ?? false;
 
-  void _reset() {
-    _timer?.cancel();
-    setState(() {
-      _elapsed = 0;
-      _running = false;
-    });
-    _send({'action': 'reset'});
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(isEdit ? 'Edit Timer' : 'New Timer'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: true, label: Text('Count Up')),
+                    ButtonSegment(value: false, label: Text('Count Down')),
+                  ],
+                  selected: {countUp},
+                  onSelectionChanged: (v) => setDialogState(() => countUp = v.first),
+                ),
+                if (!countUp) ...[
+                  const SizedBox(height: 12),
+                  Row(children: [
+                    _DurField('HH', hours, 99, (v) => hours = v),
+                    const Text(' : '),
+                    _DurField('MM', minutes, 59, (v) => minutes = v),
+                    const Text(' : '),
+                    _DurField('SS', seconds, 59, (v) => seconds = v),
+                  ]),
+                ],
+                const SizedBox(height: 12),
+                Row(children: [
+                  const Text('Bubble Color'),
+                  const Spacer(),
+                  _ColorDot(color, (c) => setDialogState(() => color = c)),
+                ]),
+                Row(children: [
+                  const Text('Text Color'),
+                  const Spacer(),
+                  _ColorDot(textColor, (c) => setDialogState(() => textColor = c)),
+                ]),
+                Row(children: [
+                  const Text('Opacity'),
+                  Expanded(child: Slider(value: opacity, min: 0.1, max: 1.0, onChanged: (v) => setDialogState(() => opacity = v))),
+                  Text('${(opacity * 100).toInt()}%'),
+                ]),
+                Row(children: [
+                  const Text('Size'),
+                  Expanded(child: Slider(value: sizeScale, min: 0.5, max: 2.0, onChanged: (v) => setDialogState(() => sizeScale = v))),
+                  Text('${(sizeScale * 100).toInt()}%'),
+                ]),
+                SwitchListTile(
+                  title: const Text('Alert on End'),
+                  value: alertOnEnd,
+                  onChanged: (v) => setDialogState(() => alertOnEnd = v),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                if (isEdit) {
+                  existing!.name = nameCtrl.text;
+                  existing.countUp = countUp;
+                  existing.hours = hours;
+                  existing.minutes = minutes;
+                  existing.seconds = seconds;
+                  existing.color = color;
+                  existing.textColor = textColor;
+                  existing.opacity = opacity;
+                  existing.sizeScale = sizeScale;
+                  existing.alertOnEnd = alertOnEnd;
+                } else {
+                  _timers.add(TimerItem(
+                    id: 't${_nextId++}',
+                    name: nameCtrl.text,
+                    countUp: countUp,
+                    hours: hours,
+                    minutes: minutes,
+                    seconds: seconds,
+                    color: color,
+                    textColor: textColor,
+                    opacity: opacity,
+                    sizeScale: sizeScale,
+                    alertOnEnd: alertOnEnd,
+                  ));
+                }
+                Navigator.pop(ctx);
+                setState(() {});
+              },
+              child: Text(isEdit ? 'Save' : 'Add'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -117,59 +263,124 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Floating Timer'),
         centerTitle: true,
+        actions: [
+          IconButton(icon: const Icon(Icons.add), onPressed: _addTimer),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          children: [
-            const SizedBox(height: 24),
-            SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: true, label: Text('Count Up')),
-                ButtonSegment(value: false, label: Text('Count Down')),
-              ],
-              selected: {_countUp},
-              onSelectionChanged: _running ? (_) {} : (v) => setState(() => _countUp = v.first),
-            ),
-            if (!_countUp) ...[
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: _timers.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _DurationPicker(label: 'HH', value: _hours, max: 99, onChange: (v) => _hours = v),
-                  const Text(' : ', style: TextStyle(fontSize: 28)),
-                  _DurationPicker(label: 'MM', value: _minutes, max: 59, onChange: (v) => _minutes = v),
-                  const Text(' : ', style: TextStyle(fontSize: 28)),
-                  _DurationPicker(label: 'SS', value: _seconds, max: 59, onChange: (v) => _seconds = v),
+                  Icon(Icons.timer_off, size: 64, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+                  const SizedBox(height: 16),
+                  Text('No timers yet', style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+                  const SizedBox(height: 8),
+                  FilledButton.tonalIcon(onPressed: _addTimer, icon: const Icon(Icons.add), label: const Text('Add Timer')),
                 ],
               ),
-            ],
-            const Spacer(),
-            Text(_fmt(_display), style: theme.textTheme.displayLarge?.copyWith(fontWeight: FontWeight.w900)),
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            )
+          : Column(
               children: [
-                FilledButton.icon(
-                  onPressed: _toggle,
-                  icon: Icon(_running ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                  label: Text(_running ? 'Pause' : 'Start'),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _timers.length,
+                    itemBuilder: (ctx, i) => _TimerTile(
+                      timer: _timers[i],
+                      onToggle: () => _toggleTimer(_timers[i]),
+                      onReset: () => _resetTimer(_timers[i]),
+                      onEdit: () => _showTimerDialog(existing: _timers[i]),
+                      onRemove: () => _removeTimer(_timers[i]),
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 16),
-                OutlinedButton.icon(
-                  onPressed: _running || _elapsed > 0 ? _reset : null,
-                  icon: const Icon(Icons.stop_rounded),
-                  label: const Text('Reset'),
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _overlayActive ? _hideOverlay : _showOverlay,
+                          icon: Icon(_overlayActive ? Icons.visibility_off : Icons.visibility),
+                          label: Text(_overlayActive ? 'Hide Overlay' : 'Show Overlay'),
+                        ),
+                      ),
+                    ]),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: _overlayActive ? _hideOverlay : _showOverlay,
-              icon: Icon(_overlayActive ? Icons.visibility_off_rounded : Icons.visibility_rounded),
-              label: Text(_overlayActive ? 'Hide Overlay' : 'Show Overlay'),
+    );
+  }
+}
+
+class _TimerTile extends StatelessWidget {
+  final TimerItem timer;
+  final VoidCallback onToggle;
+  final VoidCallback onReset;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
+
+  const _TimerTile({
+    required this.timer,
+    required this.onToggle,
+    required this.onReset,
+    required this.onEdit,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: timer.color.withValues(alpha: timer.opacity),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(timer.name, style: TextStyle(color: timer.textColor, fontSize: 12)),
+              ),
+              const Spacer(),
+              IconButton(icon: const Icon(Icons.edit, size: 18), onPressed: onEdit),
+              IconButton(icon: const Icon(Icons.close, size: 18), onPressed: onRemove),
+            ]),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                timer.formattedTime,
+                style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w900, fontFamily: 'monospace'),
+              ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 8),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              FilledButton.icon(
+                onPressed: onToggle,
+                icon: Icon(timer.running ? Icons.pause : Icons.play_arrow, size: 18),
+                label: Text(timer.running ? 'Pause' : 'Start'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: timer.elapsed > 0 ? onReset : null,
+                icon: const Icon(Icons.stop, size: 18),
+                label: const Text('Reset'),
+              ),
+            ]),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(
+                timer.countUp ? 'Count Up' : 'Count Down',
+                style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+              ),
+            ),
           ],
         ),
       ),
@@ -177,43 +388,78 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _DurationPicker extends StatelessWidget {
+class _DurField extends StatelessWidget {
   final String label;
   final int value;
   final int max;
   final ValueChanged<int> onChange;
 
-  const _DurationPicker({
-    required this.label,
-    required this.value,
-    required this.max,
-    required this.onChange,
-  });
+  const _DurField(this.label, this.value, this.max, this.onChange);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
-        const SizedBox(height: 4),
-        SizedBox(
-          width: 64,
-          child: TextField(
-            controller: TextEditingController(text: value.toString().padLeft(2, '0')),
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(vertical: 8),
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
-            onSubmitted: (s) {
-              final v = int.tryParse(s) ?? 0;
-              onChange(v.clamp(0, max));
-            },
-          ),
+    return SizedBox(
+      width: 56,
+      child: TextField(
+        controller: TextEditingController(text: value.toString().padLeft(2, '0')),
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          label: Text(label, style: const TextStyle(fontSize: 10)),
+          contentPadding: const EdgeInsets.symmetric(vertical: 6),
+          border: const OutlineInputBorder(),
+          isDense: true,
         ),
-      ],
+        onChanged: (s) {
+          final v = int.tryParse(s) ?? 0;
+          onChange(v.clamp(0, max));
+        },
+      ),
+    );
+  }
+}
+
+class _ColorDot extends StatelessWidget {
+  final Color current;
+  final ValueChanged<Color> onChanged;
+
+  static const _colors = [
+    Colors.indigo,
+    Colors.blue,
+    Colors.teal,
+    Colors.green,
+    Colors.amber,
+    Colors.orange,
+    Colors.deepOrange,
+    Colors.red,
+    Colors.pink,
+    Colors.purple,
+    Colors.brown,
+    Colors.grey,
+  ];
+
+  const _ColorDot(this.current, this.onChanged);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 32,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        shrinkWrap: true,
+        children: _colors.map((c) => GestureDetector(
+          onTap: () => onChanged(c),
+          child: Container(
+            width: 28,
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            decoration: BoxDecoration(
+              color: c,
+              shape: BoxShape.circle,
+              border: c == current ? Border.all(color: Colors.white, width: 2) : null,
+            ),
+          ),
+        )).toList(),
+      ),
     );
   }
 }
