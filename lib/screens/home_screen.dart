@@ -63,6 +63,16 @@ class _HomeScreenState extends State<HomeScreen> {
     _doRestart();
   }
 
+  int _overlayWidth() {
+    final visible = _timers.where((t) => t.showInOverlay).toList();
+    if (visible.isEmpty) return 200;
+    return (visible.length * 140 + 24).clamp(80, 600);
+  }
+
+  int _overlayHeight() {
+    return 56;
+  }
+
   Future<void> _doRestart() async {
     final visible = _timers.where((t) => t.showInOverlay).toList();
     if (visible.isEmpty) {
@@ -74,8 +84,8 @@ class _HomeScreenState extends State<HomeScreen> {
     await Future.delayed(const Duration(milliseconds: 150));
     final ok = await FlutterCustomOverlay.showOverlay(
       config: OverlayConfig(
-        width: 320,
-        height: 300,
+        width: _overlayWidth(),
+        height: _overlayHeight(),
         isDraggable: true,
         alignment: OverlayAlignment.topCenter,
       ),
@@ -130,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
     if (_overlayActive) {
       _restartOverlay();
-    } else if (t.running && _timers.any((x) => x.showInOverlay)) {
+    } else if (_timers.any((x) => x.showInOverlay)) {
       _showOverlay();
     }
   }
@@ -160,8 +170,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     final ok = await FlutterCustomOverlay.showOverlay(
       config: OverlayConfig(
-        width: 320,
-        height: 300,
+        width: _overlayWidth(),
+        height: _overlayHeight(),
         isDraggable: true,
         alignment: OverlayAlignment.topCenter,
       ),
@@ -172,11 +182,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (ok) {
       setState(() => _overlayActive = true);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Overlay shown'), duration: Duration(seconds: 1)),
-        );
-      }
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Permission not granted or overlay failed')),
@@ -313,7 +318,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
                 Navigator.pop(ctx);
                 setState(() {});
-                _restartOverlay();
+                if (_overlayActive) {
+                  _restartOverlay();
+                } else if (_timers.any((x) => x.showInOverlay)) {
+                  _showOverlay();
+                }
               },
               child: Text(isEdit ? 'Save' : 'Add'),
             ),
@@ -360,20 +369,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       onEdit: () => _showTimerDialog(existing: _timers[i]),
                       onRemove: () => _removeTimer(_timers[i]),
                     ),
-                  ),
-                ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _overlayActive ? null : _showOverlay,
-                          icon: Icon(_overlayActive ? Icons.visibility : Icons.visibility_off),
-                          label: Text(_overlayActive ? 'Overlay Active' : 'Show Overlay'),
-                        ),
-                      ),
-                    ]),
                   ),
                 ),
               ],

@@ -103,20 +103,18 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Container(
-        margin: const EdgeInsets.all(4),
-        padding: _timers.isEmpty ? EdgeInsets.zero : const EdgeInsets.fromLTRB(12, 8, 12, 8),
-        decoration: BoxDecoration(
-          color: Colors.black87.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: _timers.isEmpty
-            ? const Center(child: Padding(
-                padding: EdgeInsets.all(12),
-                child: Text('No timers', style: TextStyle(color: Colors.white54, fontSize: 12)),
-              ))
-            : SingleChildScrollView(
-                child: Column(
+      body: _timers.isEmpty
+          ? const SizedBox.shrink()
+          : Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black87.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: _timers.map((t) => _TimerRow(
                     data: t,
@@ -126,7 +124,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
                   )).toList(),
                 ),
               ),
-      ),
+            ),
     );
   }
 }
@@ -153,34 +151,32 @@ class _TimerRow extends StatelessWidget {
     final fontSize = (data['fontSize'] as num?)?.toDouble() ?? 16.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: GestureDetector(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 36),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: finished ? Colors.amber.withValues(alpha: 0.9) : bgColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
-                color: fgColor, size: fontSize * 0.9,
+                color: fgColor, size: fontSize * 0.85,
               ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  time,
-                  style: TextStyle(
-                    color: finished ? Colors.black : fgColor,
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                  ),
+              const SizedBox(width: 6),
+              Text(
+                time,
+                style: TextStyle(
+                  color: finished ? Colors.black : fgColor,
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'monospace',
                 ),
               ),
             ],
