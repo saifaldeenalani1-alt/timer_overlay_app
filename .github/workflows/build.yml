@@ -42,8 +42,31 @@ jobs:
           sed -i 's|</application>|<receiver android:name=".DayCounterWidgetProvider" android:exported="true">\n<intent-filter>\n<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />\n</intent-filter>\n<meta-data android:name="android.appwidget.provider" android:resource="@xml/day_counter_info" />\n</receiver>\n</application>|' AndroidManifest.xml
 
       - run: flutter pub get
-      - run: flutter test test/overlay_test.dart --reporter expanded
+      - name: Run flutter tests
+        continue-on-error: true
+        run: |
+          set +eo pipefail
+          flutter test test/overlay_test.dart --reporter json 2>&1 | tee test_output.json
+          exit_code=${PIPESTATUS[0]}
+          echo "exit_code=$exit_code" >> $GITHUB_ENV
+          python3 -c "
+import json, sys
+for line in open('test_output.json'):
+    line = line.strip()
+    if not line: continue
+    try:
+        ev = json.loads(line)
+        if ev.get('type') == 'testDone' and ev.get('result') != 'success':
+            print(f'::error file=test/overlay_test.dart::TEST FAILED: {ev.get(\"test\",\"?\")}')
+        if ev.get('type') == 'error':
+            msg = ev.get('error', ev.get('message', str(ev)))[:500]
+            print(f'::error file=test/overlay_test.dart::{msg}')
+    except:
+        pass
+"
+          exit $exit_code
       - run: flutter build apk --release
+        if: env.exit_code == '0'
 
       - uses: actions/upload-artifact@v4
         with:
