@@ -1,26 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="12dp"
-    android:background="#1C1C1E">
+    android:gravity="center"
+    android:padding="8dp"
+    android:id="@+id/widget_root">
     <TextView
         android:id="@+id/widget_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Counter"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="\u0627\u0644\u0639\u0646\u0648\u0627\u0646"
         android:textColor="#FFFFFFFF"
-        android:textSize="12sp" />
+        android:textSize="12sp"
+        android:maxLines="1" />
     <TextView
         android:id="@+id/widget_days"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        android:gravity="center"
         android:text="--"
         android:textColor="#FFFFFFFF"
         android:textSize="28sp"
         android:textStyle="bold"
-        android:fontFamily="monospace" />
+        android:fontFamily="monospace"
+        android:maxLines="1" />
 </LinearLayout>

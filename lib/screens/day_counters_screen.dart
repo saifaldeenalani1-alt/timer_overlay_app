@@ -44,13 +44,17 @@ class _DayCountersScreenState extends State<DayCountersScreen> {
     final labelCtrl = TextEditingController(text: existing?.label ?? '');
     var targetDate = existing?.targetDate ?? DateTime.now().add(const Duration(days: 30));
     var countUp = existing?.countUp ?? false;
+    var bgColor = existing?.bgColor ?? const Color(0xFF1C1C1E);
+    var textColor = existing?.textColor ?? Colors.white;
+    var opacity = existing?.opacity ?? 1.0;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           title: Text(isEdit ? 'Edit Counter' : 'New Counter'),
-          content: Column(
+          content: SingleChildScrollView(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
@@ -89,18 +93,33 @@ class _DayCountersScreenState extends State<DayCountersScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                  color: bgColor.withValues(alpha: opacity),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(children: [
                   Text(labelCtrl.text.isEmpty ? 'Countdown' : labelCtrl.text,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
                   const SizedBox(height: 4),
                   Text(_previewDays(targetDate, countUp),
-                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, fontFamily: 'monospace')),
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: textColor)),
                 ]),
               ),
+              const SizedBox(height: 12),
+              const Text('\u0627\u0644\u0644\u0648\u0646 \u0627\u0644\u062E\u0644\u0641\u064A', style: TextStyle(fontSize: 12)),
+              const SizedBox(height: 4),
+              _DayColorPicker(selected: bgColor, onChanged: (c) => setDialogState(() => bgColor = c)),
+              const SizedBox(height: 8),
+              const Text('\u0644\u0648\u0646 \u0627\u0644\u0646\u0635', style: TextStyle(fontSize: 12)),
+              const SizedBox(height: 4),
+              _DayColorPicker(selected: textColor, onChanged: (c) => setDialogState(() => textColor = c)),
+              const SizedBox(height: 8),
+              Row(children: [
+                const Text('\u0627\u0644\u0634\u0641\u0627\u0641\u064A\u0629', style: TextStyle(fontSize: 12)),
+                Expanded(child: Slider(value: opacity, min: 0.1, max: 1.0, onChanged: (v) => setDialogState(() => opacity = v))),
+                Text('${(opacity * 100).toInt()}%', style: const TextStyle(fontSize: 11)),
+              ]),
             ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
@@ -110,12 +129,18 @@ class _DayCountersScreenState extends State<DayCountersScreen> {
                   existing!.label = labelCtrl.text;
                   existing.targetDate = targetDate;
                   existing.countUp = countUp;
+                  existing.bgColor = bgColor;
+                  existing.textColor = textColor;
+                  existing.opacity = opacity;
                 } else {
                   _counters.add(DayCounter(
                     id: 'c${_nextId++}',
                     label: labelCtrl.text,
                     targetDate: targetDate,
                     countUp: countUp,
+                    bgColor: bgColor,
+                    textColor: textColor,
+                    opacity: opacity,
                   ));
                 }
                 Navigator.pop(ctx);
@@ -204,6 +229,57 @@ class _DayCountersScreenState extends State<DayCountersScreen> {
                 );
               },
             ),
+    );
+  }
+}
+
+class _DayColorPicker extends StatelessWidget {
+  final Color selected;
+  final ValueChanged<Color> onChanged;
+
+  static const _colors = [
+    Color(0xFF1C1C1E),
+    Colors.white,
+    Colors.black,
+    Colors.indigo,
+    Colors.blue,
+    Colors.teal,
+    Colors.green,
+    Colors.amber,
+    Colors.orange,
+    Colors.deepOrange,
+    Colors.red,
+    Colors.pink,
+    Colors.purple,
+    Colors.brown,
+    Colors.grey,
+    Colors.blueGrey,
+    Colors.lime,
+    Colors.cyan,
+    Colors.deepPurple,
+  ];
+
+  const _DayColorPicker({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: _colors.map((c) => GestureDetector(
+        onTap: () => onChanged(c),
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: c,
+            shape: BoxShape.circle,
+            border: c == selected
+                ? Border.all(color: c.computeLuminance() > 0.5 ? Colors.black : Colors.white, width: 3)
+                : (c.computeLuminance() > 0.5 ? Border.all(color: Colors.grey.shade400, width: 1) : null),
+          ),
+        ),
+      )).toList(),
     );
   }
 }

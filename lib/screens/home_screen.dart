@@ -70,7 +70,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   int _overlayHeight() {
-    return 56;
+    return 64;
+  }
+
+  void _pushDataToOverlay() {
+    final visible = _timers.where((t) => t.showInOverlay).toList();
+    try {
+      FlutterCustomOverlay.shareData({
+        'action': 'state',
+        'timers': visible.map((t) => t.toMap()).toList(),
+      });
+    } catch (_) {}
   }
 
   Future<void> _doRestart() async {
@@ -89,12 +99,12 @@ class _HomeScreenState extends State<HomeScreen> {
         isDraggable: true,
         alignment: OverlayAlignment.topCenter,
       ),
-      data: {
-        'action': 'state',
-        'timers': visible.map((t) => t.toMap()).toList(),
-      },
     );
-    if (ok) setState(() => _overlayActive = true);
+    if (ok) {
+      setState(() => _overlayActive = true);
+      await Future.delayed(const Duration(milliseconds: 800));
+      _pushDataToOverlay();
+    }
   }
 
   void _checkAutoCloseOverlay() {
@@ -175,13 +185,11 @@ class _HomeScreenState extends State<HomeScreen> {
         isDraggable: true,
         alignment: OverlayAlignment.topCenter,
       ),
-      data: {
-        'action': 'state',
-        'timers': visible.map((t) => t.toMap()).toList(),
-      },
     );
     if (ok) {
       setState(() => _overlayActive = true);
+      await Future.delayed(const Duration(milliseconds: 800));
+      _pushDataToOverlay();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Permission not granted or overlay failed')),

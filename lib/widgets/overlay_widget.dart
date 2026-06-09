@@ -11,6 +11,7 @@ class OverlayWidget extends StatefulWidget {
 
 class _OverlayWidgetState extends State<OverlayWidget> {
   List<Map<String, dynamic>> _timers = [];
+  bool _loaded = false;
   StreamSubscription? _sub;
   Timer? _localTick;
 
@@ -34,6 +35,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       if (list != null) {
         setState(() {
           _timers = list.cast<Map<String, dynamic>>();
+          _loaded = true;
           _manageTick();
         });
       }
@@ -103,28 +105,38 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: _timers.isEmpty
-          ? const SizedBox.shrink()
-          : Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black87.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _timers.map((t) => _TimerRow(
-                    data: t,
-                    time: _timeFor(t),
-                    onTap: () => _toggle(t['id'] as String),
-                    onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
-                  )).toList(),
-                ),
-              ),
-            ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (!_loaded) {
+      return const Center(
+        child: Text('...', style: TextStyle(color: Colors.white54, fontSize: 14)),
+      );
+    }
+    if (_timers.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black87.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: _timers.map((t) => _TimerRow(
+            data: t,
+            time: _timeFor(t),
+            onTap: () => _toggle(t['id'] as String),
+            onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
+          )).toList(),
+        ),
+      ),
     );
   }
 }
