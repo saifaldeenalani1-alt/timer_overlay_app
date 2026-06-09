@@ -19,9 +19,9 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     FlutterOverlayWindow.overlayListener.listen(_onMessage);
   }
 
-  void _onMessage(String raw) {
+  void _onMessage(dynamic raw) {
     try {
-      final data = jsonDecode(raw) as Map<String, dynamic>;
+      final data = jsonDecode(raw as String) as Map<String, dynamic>;
       final action = data['action'] as String?;
       if (action == 'tick') {
         setState(() => _time = data['time'] as String? ?? _time);
