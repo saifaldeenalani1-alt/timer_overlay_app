@@ -101,15 +101,12 @@ class DayCounterWidgetProvider : AppWidgetProvider() {
                 daysText = "--"
             }
 
-            val alpha = (opacity * 255).toInt().coerceIn(0, 255)
-            val bgWithAlpha = (alpha shl 24) or (bgColorInt and 0x00FFFFFF)
-
             val views = RemoteViews(context.packageName, R.layout.day_counter_layout)
             views.setTextViewText(R.id.widget_label, label)
             views.setTextViewText(R.id.widget_days, daysText)
             views.setTextViewTextSize(R.id.widget_label, android.util.TypedValue.COMPLEX_UNIT_SP, fontSizeLabel.toFloat())
             views.setTextViewTextSize(R.id.widget_days, android.util.TypedValue.COMPLEX_UNIT_SP, fontSizeDays.toFloat())
-            views.setInt(R.id.widget_root, "setBackgroundColor", bgWithAlpha)
+            views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.widget_bg)
             views.setTextColor(R.id.widget_label, textColorInt)
             views.setTextColor(R.id.widget_days, textColorInt)
             appWidgetManager.updateAppWidget(appWidgetId, views)
