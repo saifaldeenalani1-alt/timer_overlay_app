@@ -46,24 +46,19 @@ jobs:
         continue-on-error: true
         run: |
           set +eo pipefail
-          flutter test test/overlay_test.dart --reporter json 2>&1 | tee test_output.json
+          flutter test test/overlay_test.dart --reporter expanded 2>&1 | tee test_output.log
           exit_code=${PIPESTATUS[0]}
           echo "exit_code=$exit_code" >> $GITHUB_ENV
           python3 << 'PYEOF'
-          import json, sys
-          for line in open('test_output.json'):
-              line = line.strip()
-              if not line:
-                  continue
-              try:
-                  ev = json.loads(line)
-                  if ev.get('type') == 'testDone' and ev.get('result') != 'success':
-                      print('::error file=test/overlay_test.dart::TEST FAILED: ' + ev.get('test', '?'))
-                  if ev.get('type') == 'error':
-                      msg = str(ev.get('error', ev.get('message', str(ev))))[:500]
-                      print('::error file=test/overlay_test.dart::' + msg)
-              except:
-                  pass
+          import re, sys
+          with open('test_output.log') as f:
+              content = f.read()
+          failures = []
+          for i, line in enumerate(content.split('\n')):
+              if 'FAILED' in line or 'error' in line.lower() or 'Expected' in line or 'Actual' in line or 'expected' in line.lower():
+                  failures.append((i+1, line.strip()))
+          for n, line in failures[:20]:
+              print(f'::error file=test/overlay_test.dart,line={n}::{line[:300]}')
           PYEOF
           exit $exit_code
       - run: flutter build apk --release
