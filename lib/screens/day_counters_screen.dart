@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/day_counter.dart';
@@ -136,7 +137,7 @@ class _DayCountersScreenState extends State<DayCountersScreen> {
 
   Future<void> _updateWidget() async {
     try {
-      final data = _counters.map((c) => c.toMap()).toList();
+      final data = jsonEncode(_counters.map((c) => c.toMap()).toList());
       await _widgetChannel.invokeMethod('updateDayCounterWidget', {'counters': data});
     } catch (_) {}
   }

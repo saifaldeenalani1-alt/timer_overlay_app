@@ -146,12 +146,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (ok) {
       setState(() => _overlayActive = true);
-      _syncOverlay();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Overlay shown'), duration: Duration(seconds: 1)),
         );
       }
+      await Future.delayed(const Duration(milliseconds: 800));
+      _syncOverlay();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Permission not granted or overlay failed')),
