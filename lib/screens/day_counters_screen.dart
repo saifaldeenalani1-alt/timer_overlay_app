@@ -47,6 +47,7 @@ class _DayCountersScreenState extends State<DayCountersScreen> {
     var bgColor = existing?.bgColor ?? const Color(0xFF1C1C1E);
     var textColor = existing?.textColor ?? Colors.white;
     var opacity = existing?.opacity ?? 1.0;
+    var fontSize = existing?.fontSize ?? 28.0;
 
     showDialog(
       context: context,
@@ -101,7 +102,7 @@ class _DayCountersScreenState extends State<DayCountersScreen> {
                       style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
                   const SizedBox(height: 4),
                   Text(_previewDays(targetDate, countUp),
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: textColor)),
+                      style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: textColor)),
                 ]),
               ),
               const SizedBox(height: 12),
@@ -118,6 +119,11 @@ class _DayCountersScreenState extends State<DayCountersScreen> {
                 Expanded(child: Slider(value: opacity, min: 0.1, max: 1.0, onChanged: (v) => setDialogState(() => opacity = v))),
                 Text('${(opacity * 100).toInt()}%', style: const TextStyle(fontSize: 11)),
               ]),
+              Row(children: [
+                const Text('\u062D\u062C\u0645 \u0627\u0644\u062E\u0637', style: TextStyle(fontSize: 12)),
+                Expanded(child: Slider(value: fontSize, min: 12, max: 72, onChanged: (v) => setDialogState(() => fontSize = v))),
+                Text('${fontSize.toInt()}', style: const TextStyle(fontSize: 11)),
+              ]),
             ],
             ),
           ),
@@ -132,6 +138,7 @@ class _DayCountersScreenState extends State<DayCountersScreen> {
                   existing.bgColor = bgColor;
                   existing.textColor = textColor;
                   existing.opacity = opacity;
+                  existing.fontSize = fontSize;
                 } else {
                   _counters.add(DayCounter(
                     id: 'c${_nextId++}',
@@ -141,6 +148,7 @@ class _DayCountersScreenState extends State<DayCountersScreen> {
                     bgColor: bgColor,
                     textColor: textColor,
                     opacity: opacity,
+                    fontSize: fontSize,
                   ));
                 }
                 Navigator.pop(ctx);

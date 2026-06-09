@@ -8,6 +8,7 @@ class DayCounter {
   Color bgColor;
   Color textColor;
   double opacity;
+  double fontSize;
 
   DayCounter({
     required this.id,
@@ -17,6 +18,7 @@ class DayCounter {
     this.bgColor = const Color(0xFF1C1C1E),
     this.textColor = Colors.white,
     this.opacity = 1.0,
+    this.fontSize = 28.0,
   }) : targetDate = targetDate ?? DateTime.now().add(const Duration(days: 30));
 
   DateTime get normalizedDate => DateTime(targetDate.year, targetDate.month, targetDate.day);
@@ -45,5 +47,6 @@ class DayCounter {
     'bgColor': bgColor.toARGB32(),
     'textColor': textColor.toARGB32(),
     'opacity': opacity,
+    'fontSize': fontSize,
   };
 }

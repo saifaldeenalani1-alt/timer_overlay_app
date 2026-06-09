@@ -11,7 +11,6 @@ class OverlayWidget extends StatefulWidget {
 
 class _OverlayWidgetState extends State<OverlayWidget> {
   List<Map<String, dynamic>> _timers = [];
-  bool _loaded = false;
   StreamSubscription? _sub;
   Timer? _localTick;
 
@@ -35,7 +34,6 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       if (list != null) {
         setState(() {
           _timers = list.cast<Map<String, dynamic>>();
-          _loaded = true;
           _manageTick();
         });
       }
@@ -103,38 +101,28 @@ class _OverlayWidgetState extends State<OverlayWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (!_loaded) {
-      return const Center(
-        child: Text('...', style: TextStyle(color: Colors.white54, fontSize: 14)),
-      );
-    }
     if (_timers.isEmpty) {
       return const SizedBox.shrink();
     }
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black87.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: _timers.map((t) => _TimerRow(
-            data: t,
-            time: _timeFor(t),
-            onTap: () => _toggle(t['id'] as String),
-            onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
-          )).toList(),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black87.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: _timers.map((t) => _TimerRow(
+              data: t,
+              time: _timeFor(t),
+              onTap: () => _toggle(t['id'] as String),
+              onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
+            )).toList(),
+          ),
         ),
       ),
     );
@@ -156,43 +144,35 @@ class _TimerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = Color(data['color'] as int).withValues(alpha: (data['opacity'] as num?)?.toDouble() ?? 0.7);
     final fgColor = Color(data['textColor'] as int);
     final running = data['running'] as bool? ?? false;
     final finished = data['finished'] as bool? ?? false;
     final fontSize = (data['fontSize'] as num?)?.toDouble() ?? 16.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: finished ? Colors.amber.withValues(alpha: 0.9) : bgColor,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
-                color: fgColor, size: fontSize * 0.85,
+        borderRadius: BorderRadius.circular(8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
+              color: fgColor, size: fontSize * 0.9,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              time,
+              style: TextStyle(
+                color: fgColor,
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'monospace',
               ),
-              const SizedBox(width: 6),
-              Text(
-                time,
-                style: TextStyle(
-                  color: finished ? Colors.black : fgColor,
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

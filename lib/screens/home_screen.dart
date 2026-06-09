@@ -73,13 +73,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return 64;
   }
 
-  void _pushDataToOverlay() {
+  void _startStopTimer() {
+    if (_timers.any((t) => t.running)) {
+      _updateTimer ??= Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    } else {
+      _updateTimer?.cancel();
+      _updateTimer = null;
+    }
+  }
+
+  Map<String, dynamic> _overlayData() {
     final visible = _timers.where((t) => t.showInOverlay).toList();
+    return {
+      'action': 'state',
+      'timers': visible.map((t) => t.toMap()).toList(),
+    };
+  }
+
+  void _pushDataToOverlay() {
     try {
-      FlutterCustomOverlay.shareData({
-        'action': 'state',
-        'timers': visible.map((t) => t.toMap()).toList(),
-      });
+      FlutterCustomOverlay.shareData(_overlayData());
     } catch (_) {}
   }
 
@@ -99,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
         isDraggable: true,
         alignment: OverlayAlignment.topCenter,
       ),
+      data: _overlayData(),
     );
     if (ok) {
       setState(() => _overlayActive = true);
@@ -134,10 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
     setState(() {});
-    if (!_timers.any((t) => t.running)) {
-      _updateTimer?.cancel();
-      _updateTimer = null;
-    }
+    _startStopTimer();
   }
 
   void _toggleTimer(TimerItem t) {
@@ -148,6 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (t.isFinished) t.elapsed = 0;
     }
     setState(() {});
+    _startStopTimer();
     if (_overlayActive) {
       _restartOverlay();
     } else if (_timers.any((x) => x.showInOverlay)) {
@@ -185,6 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
         isDraggable: true,
         alignment: OverlayAlignment.topCenter,
       ),
+      data: _overlayData(),
     );
     if (ok) {
       setState(() => _overlayActive = true);

@@ -56,13 +56,11 @@ class DayCounterWidgetProvider : AppWidgetProvider() {
             var label: String
             var daysText: String
 
-            val minW = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) ?: 250
-            val fontSizeDays = (minW / 12).coerceIn(16, 48)
-            val fontSizeLabel = (minW / 20).coerceIn(10, 20)
-
             var bgColorInt = -14821858
             var textColorInt = -1
             var opacity = 1.0
+            var fontSizeDays = 28f
+            var fontSizeLabel = 14f
 
             try {
                 val arr = org.json.JSONArray(countersJson)
@@ -73,6 +71,8 @@ class DayCounterWidgetProvider : AppWidgetProvider() {
                     bgColorInt = obj.optInt("bgColor", -14821858)
                     textColorInt = obj.optInt("textColor", -1)
                     opacity = obj.optDouble("opacity", 1.0)
+                    fontSizeDays = obj.optDouble("fontSize", 28.0).toFloat().coerceIn(12f, 72f)
+                    fontSizeLabel = (fontSizeDays / 2).coerceIn(10f, 36f)
                     val dateStr = obj.optString("targetDate", "")
                     if (dateStr.isEmpty()) {
                         daysText = "--"
