@@ -46,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (idx >= 0) {
           _timers[idx].dispose();
           setState(() => _timers.removeAt(idx));
-          _syncOverlay();
+          _checkAutoCloseOverlay();
         }
       }
     }
@@ -58,20 +58,43 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _syncOverlay() {
+  void _restartOverlay() {
+    if (!_overlayActive) return;
+    _doRestart();
+  }
+
+  Future<void> _doRestart() async {
     final visible = _timers.where((t) => t.showInOverlay).toList();
-    try {
-      FlutterCustomOverlay.shareData({
+    if (visible.isEmpty) {
+      await FlutterCustomOverlay.closeOverlay();
+      setState(() => _overlayActive = false);
+      return;
+    }
+    await FlutterCustomOverlay.closeOverlay();
+    await Future.delayed(const Duration(milliseconds: 150));
+    final ok = await FlutterCustomOverlay.showOverlay(
+      config: OverlayConfig(
+        width: 320,
+        height: 300,
+        isDraggable: true,
+        alignment: OverlayAlignment.topCenter,
+      ),
+      data: {
         'action': 'state',
         'timers': visible.map((t) => t.toMap()).toList(),
-      });
-    } catch (_) {}
+      },
+    );
+    if (ok) setState(() => _overlayActive = true);
+  }
 
-    if (_timers.any((t) => t.running)) {
-      _updateTimer ??= Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  void _checkAutoCloseOverlay() {
+    if (!_overlayActive) return;
+    final visible = _timers.where((t) => t.showInOverlay).toList();
+    if (visible.isEmpty) {
+      FlutterCustomOverlay.closeOverlay();
+      setState(() => _overlayActive = false);
     } else {
-      _updateTimer?.cancel();
-      _updateTimer = null;
+      _restartOverlay();
     }
   }
 
@@ -91,7 +114,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
     setState(() {});
-    _syncOverlay();
     if (!_timers.any((t) => t.running)) {
       _updateTimer?.cancel();
       _updateTimer = null;
@@ -106,20 +128,24 @@ class _HomeScreenState extends State<HomeScreen> {
       if (t.isFinished) t.elapsed = 0;
     }
     setState(() {});
-    _syncOverlay();
+    if (_overlayActive) {
+      _restartOverlay();
+    } else if (t.running && _timers.any((x) => x.showInOverlay)) {
+      _showOverlay();
+    }
   }
 
   void _removeTimer(TimerItem t) {
     t.dispose();
     setState(() => _timers.remove(t));
-    _syncOverlay();
+    _checkAutoCloseOverlay();
   }
 
   void _resetTimer(TimerItem t) {
     t.elapsed = 0;
     t.cancelTimer();
     setState(() {});
-    _syncOverlay();
+    if (_overlayActive) _restartOverlay();
   }
 
   Future<void> _showOverlay() async {
@@ -134,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     final ok = await FlutterCustomOverlay.showOverlay(
       config: OverlayConfig(
-        width: 260,
+        width: 320,
         height: 300,
         isDraggable: true,
         alignment: OverlayAlignment.topCenter,
@@ -151,20 +177,11 @@ class _HomeScreenState extends State<HomeScreen> {
           const SnackBar(content: Text('Overlay shown'), duration: Duration(seconds: 1)),
         );
       }
-      await Future.delayed(const Duration(milliseconds: 800));
-      _syncOverlay();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Permission not granted or overlay failed')),
       );
     }
-  }
-
-  Future<void> _hideOverlay() async {
-    await FlutterCustomOverlay.closeOverlay();
-    _updateTimer?.cancel();
-    _updateTimer = null;
-    setState(() => _overlayActive = false);
   }
 
   void _addTimer() => _showTimerDialog();
@@ -296,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
                 Navigator.pop(ctx);
                 setState(() {});
-                _syncOverlay();
+                _restartOverlay();
               },
               child: Text(isEdit ? 'Save' : 'Add'),
             ),
@@ -351,9 +368,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(children: [
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: _overlayActive ? _hideOverlay : _showOverlay,
-                          icon: Icon(_overlayActive ? Icons.visibility_off : Icons.visibility),
-                          label: Text(_overlayActive ? 'Hide Overlay' : 'Show Overlay'),
+                          onPressed: _overlayActive ? null : _showOverlay,
+                          icon: Icon(_overlayActive ? Icons.visibility : Icons.visibility_off),
+                          label: Text(_overlayActive ? 'Overlay Active' : 'Show Overlay'),
                         ),
                       ),
                     ]),

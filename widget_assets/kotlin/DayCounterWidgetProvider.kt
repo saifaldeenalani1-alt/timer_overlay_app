@@ -5,7 +5,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.SharedPreferences
 import android.widget.RemoteViews
-import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
 class DayCounterWidgetProvider : AppWidgetProvider() {
@@ -54,12 +54,18 @@ class DayCounterWidgetProvider : AppWidgetProvider() {
                     if (dateStr.isEmpty()) {
                         daysText = "--"
                     } else {
-                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                        val targetMs = sdf.parse(dateStr)?.time ?: 0L
-                        val nowMs = System.currentTimeMillis()
-                        val diffMs = targetMs - nowMs
+                        val parts = dateStr.split("-")
+                        val targetCal = Calendar.getInstance()
+                        targetCal.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt(), 0, 0, 0)
+                        targetCal.set(Calendar.MILLISECOND, 0)
+                        val nowCal = Calendar.getInstance()
+                        nowCal.set(Calendar.HOUR_OF_DAY, 0)
+                        nowCal.set(Calendar.MINUTE, 0)
+                        nowCal.set(Calendar.SECOND, 0)
+                        nowCal.set(Calendar.MILLISECOND, 0)
+                        val diffMs = targetCal.timeInMillis - nowCal.timeInMillis
                         val days = (diffMs / (1000L * 60 * 60 * 24)).toInt()
-                        val absDays = if (days >= 0) days else -days
+                        val absDays = kotlin.math.abs(days)
                         val s = if (absDays != 1) "s" else ""
                         daysText = if (days >= 0) "$absDays day$s left"
                                    else "$absDays day$s ago"
