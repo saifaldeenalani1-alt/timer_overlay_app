@@ -29,6 +29,18 @@ jobs:
           cd android/app/src/main
           sed -i 's|</manifest>|<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>\n<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n</manifest>|' AndroidManifest.xml
 
+      - name: Copy home screen widget files
+        run: |
+          # Copy widget layouts & info xml
+          cp -r widget_assets/res/* android/app/src/main/res/
+          # Copy widget Kotlin provider
+          mkdir -p android/app/src/main/kotlin/com/timer/timer_overlay_app
+          cp widget_assets/kotlin/DayCounterWidgetProvider.kt android/app/src/main/kotlin/com/timer/timer_overlay_app/
+          cp widget_assets/kotlin/MainActivity.kt android/app/src/main/kotlin/com/timer/timer_overlay_app/
+          # Add widget receiver to AndroidManifest (before closing application tag)
+          cd android/app/src/main
+          sed -i 's|</application>|<receiver android:name=".DayCounterWidgetProvider" android:exported="true">\n<intent-filter>\n<action android:name="android.appwidget.action.APPWIDGET_UPDATE" />\n</intent-filter>\n<meta-data android:name="android.appwidget.provider" android:resource="@xml/day_counter_info" />\n</receiver>\n</application>|' AndroidManifest.xml
+
       - run: flutter pub get
       - run: flutter build apk --release
 
