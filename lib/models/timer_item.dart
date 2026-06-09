@@ -17,6 +17,7 @@ class TimerItem {
   double opacity;
   double sizeScale;
   bool alertOnEnd;
+  bool showInOverlay;
 
   TimerItem({
     required this.id,
@@ -32,6 +33,7 @@ class TimerItem {
     this.opacity = 0.7,
     this.sizeScale = 1.0,
     this.alertOnEnd = false,
+    this.showInOverlay = true,
   });
 
   int get total => hours * 3600 + minutes * 60 + seconds;

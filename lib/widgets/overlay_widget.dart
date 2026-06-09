@@ -66,20 +66,16 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       return const SizedBox.shrink();
     }
 
-    final baseScale = _timers.fold(1.0, (max, t) {
-      final s = (t['sizeScale'] as num?)?.toDouble() ?? 1.0;
-      return s > max ? s : max;
-    });
-
-    return Material(
-      type: MaterialType.transparency,
-      child: GestureDetector(
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: GestureDetector(
         onTap: () => setState(() => _minimized = !_minimized),
         child: Container(
+          margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: Colors.black87.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(16 * baseScale),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -112,45 +108,39 @@ class _TimerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scale = (data['sizeScale'] as num?)?.toDouble() ?? 1.0;
     final bgColor = Color(data['color'] as int).withValues(alpha: (data['opacity'] as num?)?.toDouble() ?? 0.7);
     final fgColor = Color(data['textColor'] as int);
     final running = data['running'] as bool? ?? false;
     final finished = data['finished'] as bool? ?? false;
-    final fontSize = (16 * scale).clamp(12.0, 32.0);
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 2 * scale),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: GestureDetector(
         onTap: onTap,
         onLongPress: onLongPress,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(horizontal: 10 * scale, vertical: 6 * scale),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: finished ? Colors.amber.withValues(alpha: 0.9) : bgColor,
-            borderRadius: BorderRadius.circular(8 * scale),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
-                color: fgColor, size: 14 * scale,
+                color: fgColor, size: 14,
               ),
-              SizedBox(width: 4 * scale),
+              const SizedBox(width: 4),
               if (!minimized) ...[
-                Text(
-                  data['name'] as String? ?? '',
-                  style: TextStyle(color: fgColor, fontSize: fontSize * 0.7),
-                ),
-                SizedBox(width: 6 * scale),
+                Text(data['name'] as String? ?? '', style: TextStyle(color: fgColor, fontSize: 11)),
+                const SizedBox(width: 6),
               ],
               Text(
                 data['time'] as String? ?? '00:00:00',
                 style: TextStyle(
                   color: finished ? Colors.black : fgColor,
-                  fontSize: fontSize,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'monospace',
                 ),

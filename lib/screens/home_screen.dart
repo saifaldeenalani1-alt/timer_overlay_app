@@ -40,8 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final id = event['id'] as String?;
       if (action == 'toggle' && id != null) {
         final timer = _timers.cast<TimerItem?>().firstWhere((t) => t?.id == id, orElse: () => null);
-        timer?.cancelTimer();
         if (timer != null) {
+          timer.cancelTimer();
           setState(() {});
           _syncOverlay();
         }
@@ -63,14 +63,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _syncOverlay() {
-    final anyRunning = _timers.any((t) => t.running);
-    final data = {
+    final visible = _timers.where((t) => t.showInOverlay).toList();
+    FlutterCustomOverlay.shareData({
       'action': 'state',
-      'timers': _timers.map((t) => t.toMap()).toList(),
-    };
-    FlutterCustomOverlay.shareData(data);
+      'timers': visible.map((t) => t.toMap()).toList(),
+    });
 
-    if (anyRunning) {
+    if (_timers.any((t) => t.running)) {
       _updateTimer ??= Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     } else {
       _updateTimer?.cancel();
@@ -85,12 +84,16 @@ class _HomeScreenState extends State<HomeScreen> {
         t.elapsed++;
         if (t.isFinished) {
           t.cancelTimer();
+          if (t.alertOnEnd) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${t.name} finished!'), duration: const Duration(seconds: 3)),
+            );
+          }
         }
       }
     }
     setState(() {});
     _syncOverlay();
-
     if (!_timers.any((t) => t.running)) {
       _updateTimer?.cancel();
       _updateTimer = null;
@@ -102,6 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
       t.cancelTimer();
     } else {
       t.running = true;
+      if (t.isFinished) t.elapsed = 0;
     }
     setState(() {});
     _syncOverlay();
@@ -121,13 +125,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showOverlay() async {
-    final config = OverlayConfig(
-      width: 260,
-      height: 300,
-      isDraggable: true,
-      alignment: OverlayAlignment.topCenter,
+    final visible = _timers.where((t) => t.showInOverlay).toList();
+    final ok = await FlutterCustomOverlay.showOverlay(
+      config: OverlayConfig(
+        width: 260,
+        height: 300,
+        isDraggable: true,
+        alignment: OverlayAlignment.topCenter,
+      ),
+      data: {
+        'action': 'state',
+        'timers': visible.map((t) => t.toMap()).toList(),
+      },
     );
-    final ok = await FlutterCustomOverlay.showOverlay(config: config);
     if (ok) {
       setState(() => _overlayActive = true);
       _syncOverlay();
@@ -155,6 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
     var opacity = existing?.opacity ?? 0.7;
     var sizeScale = existing?.sizeScale ?? 1.0;
     var alertOnEnd = existing?.alertOnEnd ?? false;
+    var showInOverlay = existing?.showInOverlay ?? true;
 
     showDialog(
       context: context,
@@ -164,53 +175,60 @@ class _HomeScreenState extends State<HomeScreen> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 SegmentedButton<bool>(
                   segments: const [
-                    ButtonSegment(value: true, label: Text('Count Up')),
-                    ButtonSegment(value: false, label: Text('Count Down')),
+                    ButtonSegment(value: true, label: Text('Up')),
+                    ButtonSegment(value: false, label: Text('Down')),
                   ],
                   selected: {countUp},
                   onSelectionChanged: (v) => setDialogState(() => countUp = v.first),
                 ),
                 if (!countUp) ...[
                   const SizedBox(height: 12),
-                  Row(children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     _DurField('HH', hours, 99, (v) => hours = v),
-                    const Text(' : '),
+                    const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text(':', style: TextStyle(fontSize: 20))),
                     _DurField('MM', minutes, 59, (v) => minutes = v),
-                    const Text(' : '),
+                    const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text(':', style: TextStyle(fontSize: 20))),
                     _DurField('SS', seconds, 59, (v) => seconds = v),
                   ]),
                 ],
                 const SizedBox(height: 12),
+                const Text('Bubble Color', style: TextStyle(fontSize: 12)),
+                const SizedBox(height: 4),
+                _ColorPicker(selected: color, onChanged: (c) => setDialogState(() => color = c)),
+                const SizedBox(height: 8),
+                const Text('Text Color', style: TextStyle(fontSize: 12)),
+                const SizedBox(height: 4),
+                _ColorPicker(selected: textColor, onChanged: (c) => setDialogState(() => textColor = c)),
+                const SizedBox(height: 8),
                 Row(children: [
-                  const Text('Bubble Color'),
-                  const Spacer(),
-                  _ColorDot(color, (c) => setDialogState(() => color = c)),
-                ]),
-                Row(children: [
-                  const Text('Text Color'),
-                  const Spacer(),
-                  _ColorDot(textColor, (c) => setDialogState(() => textColor = c)),
-                ]),
-                Row(children: [
-                  const Text('Opacity'),
+                  const Text('Opacity', style: TextStyle(fontSize: 12)),
                   Expanded(child: Slider(value: opacity, min: 0.1, max: 1.0, onChanged: (v) => setDialogState(() => opacity = v))),
-                  Text('${(opacity * 100).toInt()}%'),
+                  Text('${(opacity * 100).toInt()}%', style: const TextStyle(fontSize: 11)),
                 ]),
                 Row(children: [
-                  const Text('Size'),
+                  const Text('Size', style: TextStyle(fontSize: 12)),
                   Expanded(child: Slider(value: sizeScale, min: 0.5, max: 2.0, onChanged: (v) => setDialogState(() => sizeScale = v))),
-                  Text('${(sizeScale * 100).toInt()}%'),
+                  Text('${(sizeScale * 100).toInt()}%', style: const TextStyle(fontSize: 11)),
                 ]),
                 SwitchListTile(
-                  title: const Text('Alert on End'),
+                  title: const Text('Alert on End', style: TextStyle(fontSize: 12)),
                   value: alertOnEnd,
                   onChanged: (v) => setDialogState(() => alertOnEnd = v),
                   contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+                SwitchListTile(
+                  title: const Text('Show in Overlay', style: TextStyle(fontSize: 12)),
+                  value: showInOverlay,
+                  onChanged: (v) => setDialogState(() => showInOverlay = v),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
                 ),
               ],
             ),
@@ -230,6 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   existing.opacity = opacity;
                   existing.sizeScale = sizeScale;
                   existing.alertOnEnd = alertOnEnd;
+                  existing.showInOverlay = showInOverlay;
                 } else {
                   _timers.add(TimerItem(
                     id: 't${_nextId++}',
@@ -243,6 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     opacity: opacity,
                     sizeScale: sizeScale,
                     alertOnEnd: alertOnEnd,
+                    showInOverlay: showInOverlay,
                   ));
                 }
                 Navigator.pop(ctx);
@@ -347,7 +367,13 @@ class _TimerTile extends StatelessWidget {
                   color: timer.color.withValues(alpha: timer.opacity),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(timer.name, style: TextStyle(color: timer.textColor, fontSize: 12)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (timer.showInOverlay) ...[
+                    const Icon(Icons.visibility, size: 12, color: Colors.white70),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(timer.name, style: TextStyle(color: timer.textColor, fontSize: 12)),
+                ]),
               ),
               const Spacer(),
               IconButton(icon: const Icon(Icons.edit, size: 18), onPressed: onEdit),
@@ -399,7 +425,7 @@ class _DurField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 56,
+      width: 52,
       child: TextField(
         controller: TextEditingController(text: value.toString().padLeft(2, '0')),
         textAlign: TextAlign.center,
@@ -419,8 +445,8 @@ class _DurField extends StatelessWidget {
   }
 }
 
-class _ColorDot extends StatelessWidget {
-  final Color current;
+class _ColorPicker extends StatelessWidget {
+  final Color selected;
   final ValueChanged<Color> onChanged;
 
   static const _colors = [
@@ -436,30 +462,31 @@ class _ColorDot extends StatelessWidget {
     Colors.purple,
     Colors.brown,
     Colors.grey,
+    Colors.blueGrey,
+    Colors.lime,
+    Colors.cyan,
+    Colors.deepPurple,
   ];
 
-  const _ColorDot(this.current, this.onChanged);
+  const _ColorPicker({required this.selected, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 32,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        shrinkWrap: true,
-        children: _colors.map((c) => GestureDetector(
-          onTap: () => onChanged(c),
-          child: Container(
-            width: 28,
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-              color: c,
-              shape: BoxShape.circle,
-              border: c == current ? Border.all(color: Colors.white, width: 2) : null,
-            ),
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: _colors.map((c) => GestureDetector(
+        onTap: () => onChanged(c),
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: c,
+            shape: BoxShape.circle,
+            border: c == selected ? Border.all(color: Colors.white, width: 3) : null,
           ),
-        )).toList(),
-      ),
+        ),
+      )).toList(),
     );
   }
 }
