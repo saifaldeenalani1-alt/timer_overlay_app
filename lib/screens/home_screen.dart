@@ -51,6 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showOverlay() async {
     await FlutterOverlayWindow.showOverlay(
+      height: 60,
+      width: 210,
       enableDrag: true,
       overlayTitle: 'Timer',
       flag: OverlayFlag.defaultFlag,
