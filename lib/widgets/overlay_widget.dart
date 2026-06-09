@@ -66,7 +66,10 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       return const SizedBox.shrink();
     }
 
-    final baseScale = _timers.fold(1.0, (max, t) => (t['sizeScale'] as num?)?.toDouble() ?? 1.0 > max ? (t['sizeScale'] as num).toDouble() : max);
+    final baseScale = _timers.fold(1.0, (max, t) {
+      final s = (t['sizeScale'] as num?)?.toDouble() ?? 1.0;
+      return s > max ? s : max;
+    });
 
     return Material(
       type: MaterialType.transparency,
