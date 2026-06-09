@@ -60,8 +60,8 @@ class DayCounterWidgetProvider : AppWidgetProvider() {
             val fontSizeDays = (minW / 12).coerceIn(16, 48)
             val fontSizeLabel = (minW / 20).coerceIn(10, 20)
 
-            var bgColorInt = 0xFF1C1C1E
-            var textColorInt = 0xFFFFFFFF
+            var bgColorInt = -14821858
+            var textColorInt = -1
             var opacity = 1.0
 
             try {
@@ -70,8 +70,8 @@ class DayCounterWidgetProvider : AppWidgetProvider() {
                     val pinIdx = appWidgetId % arr.length()
                     val obj = arr.getJSONObject(pinIdx)
                     label = obj.optString("label", "\u0627\u0644\u0639\u0646\u0648\u0627\u0646")
-                    bgColorInt = obj.optInt("bgColor", 0xFF1C1C1E)
-                    textColorInt = obj.optInt("textColor", 0xFFFFFFFF)
+                    bgColorInt = obj.optInt("bgColor", -14821858)
+                    textColorInt = obj.optInt("textColor", -1)
                     opacity = obj.optDouble("opacity", 1.0)
                     val dateStr = obj.optString("targetDate", "")
                     if (dateStr.isEmpty()) {
