@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_custom_overlay/flutter_custom_overlay.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 class OverlayWidget extends StatefulWidget {
   const OverlayWidget({super.key});
@@ -19,8 +19,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   @override
   void initState() {
     super.initState();
-    OverlayMessenger.listen();
-    _sub = OverlayMessenger.onDataReceived.listen(_onData);
+    _sub = FlutterOverlayWindow.overlayListener.listen(_onData);
   }
 
   @override
@@ -64,7 +63,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   }
 
   void _toggle(String id) {
-    OverlayMessenger.sendToMainApp({'action': 'toggle', 'id': id});
+    FlutterOverlayWindow.shareData({'action': 'toggle', 'id': id});
   }
 
   static String _fmt(int d) {
@@ -89,7 +88,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       onTap: () => _toggle(_timers.first['id'] as String),
       onLongPress: () {
         final t = _timers.first;
-        OverlayMessenger.sendToMainApp({
+        FlutterOverlayWindow.shareData({
           'action': 'request_remove',
           'id': t['id'] as String,
           'name': t['name'] as String,
@@ -98,7 +97,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
       onPanUpdate: (d) {
         _dragX += d.delta.dx;
         _dragY += d.delta.dy;
-        OverlayMessenger.sendToMainApp({
+        FlutterOverlayWindow.shareData({
           'action': 'drag',
           'x': _dragX.round(),
           'y': _dragY.round(),
