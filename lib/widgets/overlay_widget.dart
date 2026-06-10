@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:flutter_custom_overlay/flutter_custom_overlay.dart';
 
 class OverlayWidget extends StatefulWidget {
   const OverlayWidget({super.key});
@@ -13,11 +13,14 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   List<Map<String, dynamic>> _timers = [];
   StreamSubscription? _sub;
   Timer? _localTick;
+  double _dragX = 0;
+  double _dragY = 0;
 
   @override
   void initState() {
     super.initState();
-    _sub = FlutterOverlayWindow.overlayListener.listen(_onData);
+    OverlayMessenger.listen();
+    _sub = OverlayMessenger.onDataReceived.listen(_onData);
   }
 
   @override
@@ -61,7 +64,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   }
 
   void _toggle(String id) {
-    FlutterOverlayWindow.shareData({'action': 'toggle', 'id': id});
+    OverlayMessenger.sendToMainApp({'action': 'toggle', 'id': id});
   }
 
   void _confirmRemove(String id, String name) {
@@ -75,7 +78,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              FlutterOverlayWindow.shareData({'action': 'remove', 'id': id});
+              OverlayMessenger.sendToMainApp({'action': 'remove', 'id': id});
             },
             child: const Text('Remove', style: TextStyle(color: Colors.red)),
           ),
@@ -98,36 +101,47 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     return _fmt(up ? e : (t - e).clamp(0, t));
   }
 
+  void _onPointerMove(PointerMoveEvent ev) {
+    _dragX += ev.delta.dx;
+    _dragY += ev.delta.dy;
+    try {
+      FlutterCustomOverlay.updatePosition(x: _dragX.round(), y: _dragY.round());
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_timers.isEmpty) return const SizedBox.shrink();
-    return Material(
-      color: Colors.transparent,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: _timers.map((t) {
-          final bgColor = Color(t['color'] as int);
-          final opacity = (t['opacity'] as num?)?.toDouble() ?? 0.7;
-          final idx = _timers.indexOf(t);
-          return Padding(
-            padding: EdgeInsets.only(bottom: idx < _timers.length - 1 ? 8 : 0),
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _toggle(t['id'] as String),
-              onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
-              child: Container(
-                clipBehavior: Clip.none,
-                decoration: BoxDecoration(
-                  color: bgColor.withValues(alpha: opacity),
-                  borderRadius: BorderRadius.circular(12),
+    return Listener(
+      onPointerMove: _onPointerMove,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: _timers.map((t) {
+            final bgColor = Color(t['color'] as int);
+            final opacity = (t['opacity'] as num?)?.toDouble() ?? 0.7;
+            final idx = _timers.indexOf(t);
+            return Padding(
+              padding: EdgeInsets.only(bottom: idx < _timers.length - 1 ? 8 : 0),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _toggle(t['id'] as String),
+                onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
+                child: Container(
+                  clipBehavior: Clip.none,
+                  decoration: BoxDecoration(
+                    color: bgColor.withValues(alpha: opacity),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  child: _TimerContent(data: t, time: _timeFor(t)),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                child: _TimerContent(data: t, time: _timeFor(t)),
               ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
