@@ -67,26 +67,6 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     OverlayMessenger.sendToMainApp({'action': 'toggle', 'id': id});
   }
 
-  void _confirmRemove(String id, String name) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove Timer'),
-        content: Text('Remove "$name"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              OverlayMessenger.sendToMainApp({'action': 'remove', 'id': id});
-            },
-            child: const Text('Remove', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
   static String _fmt(int d) {
     final h = d ~/ 3600;
     final m = (d % 3600) ~/ 60;
@@ -101,19 +81,29 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     return _fmt(up ? e : (t - e).clamp(0, t));
   }
 
-  void _onPointerMove(PointerMoveEvent ev) {
-    _dragX += ev.delta.dx;
-    _dragY += ev.delta.dy;
-    try {
-      FlutterCustomOverlay.updatePosition(x: _dragX.round(), y: _dragY.round());
-    } catch (_) {}
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_timers.isEmpty) return const SizedBox.shrink();
-    return Listener(
-      onPointerMove: _onPointerMove,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _toggle(_timers.first['id'] as String),
+      onLongPress: () {
+        final t = _timers.first;
+        OverlayMessenger.sendToMainApp({
+          'action': 'request_remove',
+          'id': t['id'] as String,
+          'name': t['name'] as String,
+        });
+      },
+      onPanUpdate: (d) {
+        _dragX += d.delta.dx;
+        _dragY += d.delta.dy;
+        OverlayMessenger.sendToMainApp({
+          'action': 'drag',
+          'x': _dragX.round(),
+          'y': _dragY.round(),
+        });
+      },
       child: Material(
         type: MaterialType.transparency,
         child: Column(
@@ -125,19 +115,14 @@ class _OverlayWidgetState extends State<OverlayWidget> {
             final idx = _timers.indexOf(t);
             return Padding(
               padding: EdgeInsets.only(bottom: idx < _timers.length - 1 ? 8 : 0),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _toggle(t['id'] as String),
-                onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
-                child: Container(
-                  clipBehavior: Clip.none,
-                  decoration: BoxDecoration(
-                    color: bgColor.withValues(alpha: opacity),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  child: _TimerContent(data: t, time: _timeFor(t)),
+              child: Container(
+                clipBehavior: Clip.none,
+                decoration: BoxDecoration(
+                  color: bgColor.withValues(alpha: opacity),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                child: _TimerContent(data: t, time: _timeFor(t)),
               ),
             );
           }).toList(),
