@@ -41,15 +41,40 @@ class _HomeScreenState extends State<HomeScreen> {
       if (action == 'toggle' && id != null) {
         final timer = _timers.where((t) => t.id == id).firstOrNull;
         if (timer != null) _toggleTimer(timer);
-      } else if (action == 'remove' && id != null) {
-        final idx = _timers.indexWhere((t) => t.id == id);
-        if (idx >= 0) {
-          _timers[idx].dispose();
-          setState(() => _timers.removeAt(idx));
-          _checkAutoCloseOverlay();
-        }
+      } else if (action == 'request_remove' && id != null) {
+        _showRemoveConfirm(id, event['name'] as String? ?? '');
+      } else if (action == 'drag') {
+        final x = event['x'] as int? ?? 0;
+        final y = event['y'] as int? ?? 0;
+        try { FlutterCustomOverlay.updatePosition(x: x, y: y); } catch (_) {}
       }
     }
+  }
+
+  void _showRemoveConfirm(String id, String name) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Timer'),
+        content: Text('Remove "$name"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              final idx = _timers.indexWhere((t) => t.id == id);
+              if (idx >= 0) {
+                _timers[idx].dispose();
+                setState(() => _timers.removeAt(idx));
+                _checkAutoCloseOverlay();
+              }
+            },
+            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _checkPermission() async {
@@ -67,13 +92,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _overlayHeight() {
     final visible = _timers.where((t) => t.showInOverlay).toList();
-    if (visible.isEmpty) return 120;
+    if (visible.isEmpty) return 150;
     int total = 0;
     for (final t in visible) {
-      total += (t.fontSize * 3 + 100).round();
+      total += (t.fontSize * 4 + 150).round();
     }
-    total += (visible.length - 1) * 16;
-    return total.clamp(120, 1500);
+    total += (visible.length - 1) * 20;
+    return total.clamp(150, 2000);
   }
 
   void _startStopTimer() {
