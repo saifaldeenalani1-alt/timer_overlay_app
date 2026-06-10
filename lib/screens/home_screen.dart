@@ -110,17 +110,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     await FlutterOverlayWindow.closeOverlay();
     await Future.delayed(const Duration(milliseconds: 150));
-    final ok = await FlutterOverlayWindow.showOverlay(
+    await FlutterOverlayWindow.showOverlay(
       height: _overlayHeight(),
       width: _overlayWidth(),
       enableDrag: true,
       alignment: OverlayAlignment.topCenter,
     );
-    if (ok) {
-      setState(() => _overlayActive = true);
-      await Future.delayed(const Duration(milliseconds: 800));
-      _pushDataToOverlay();
-    }
+    setState(() => _overlayActive = true);
+    await Future.delayed(const Duration(milliseconds: 800));
+    _pushDataToOverlay();
   }
 
   void _checkAutoCloseOverlay() {
@@ -192,21 +190,15 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       return;
     }
-    final ok = await FlutterOverlayWindow.showOverlay(
+    await FlutterOverlayWindow.showOverlay(
       height: _overlayHeight(),
       width: _overlayWidth(),
       enableDrag: true,
       alignment: OverlayAlignment.topCenter,
     );
-    if (ok) {
-      setState(() => _overlayActive = true);
-      await Future.delayed(const Duration(milliseconds: 800));
-      _pushDataToOverlay();
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Permission not granted or overlay failed')),
-      );
-    }
+    setState(() => _overlayActive = true);
+    await Future.delayed(const Duration(milliseconds: 800));
+    _pushDataToOverlay();
   }
 
   void _addTimer() => _showTimerDialog();
