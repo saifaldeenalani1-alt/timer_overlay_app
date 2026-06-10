@@ -108,7 +108,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
         behavior: HitTestBehavior.opaque,
         onTap: () => _toggle(t['id'] as String),
         onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
-        child: _TimerContent(data: t, time: _timeFor(t)),
+        child: Container(height: double.infinity, alignment: Alignment.center, child: _TimerContent(data: t, time: _timeFor(t))),
       )).toList(),
     );
   }
@@ -151,3 +151,4 @@ class _TimerContent extends StatelessWidget {
     );
   }
 }
+
