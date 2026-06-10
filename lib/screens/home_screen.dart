@@ -63,30 +63,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _doRestart();
   }
 
-  int _overlayWidth() {
-    final visible = _timers.where((t) => t.showInOverlay).toList();
-    if (visible.isEmpty) return 200;
-    int total = 0;
-    for (final t in visible) {
-      total += (t.fontSize * 8 + 44).round();
-    }
-    total += (visible.length - 1) * 6;
-    return total.clamp(120, 800);
-  }
-    return maxW.round().clamp(120, 500);
-  }
+  int _overlayWidth() => 400;
 
   int _overlayHeight() {
     final visible = _timers.where((t) => t.showInOverlay).toList();
-    if (visible.isEmpty) return 60;
-    double maxFs = 16;
+    if (visible.isEmpty) return 80;
+    int total = 0;
     for (final t in visible) {
-      if (t.fontSize > maxFs) maxFs = t.fontSize;
+      total += (t.fontSize * 2 + 50).round();
     }
-    return (maxFs * 2.4 + 16).round().clamp(60, 180);
-  }
-    total += (visible.length - 1) * 4;
-    return total.clamp(50, 600);
+    total += (visible.length - 1) * 8;
+    return total.clamp(80, 800);
   }
 
   void _startStopTimer() {
