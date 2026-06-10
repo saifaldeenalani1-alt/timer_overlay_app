@@ -105,30 +105,34 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     if (_timers.isEmpty) return const SizedBox.shrink();
     return Material(
       type: MaterialType.transparency,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: _timers.map((t) {
-          final bgColor = Color(t['color'] as int);
-          final opacity = (t['opacity'] as num?)?.toDouble() ?? 0.7;
-          final idx = _timers.indexOf(t);
-          return Padding(
-            padding: EdgeInsets.only(bottom: idx < _timers.length - 1 ? 4 : 0),
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _toggle(t['id'] as String),
-              onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: bgColor.withValues(alpha: opacity),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                child: _TimerContent(data: t, time: _timeFor(t)),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: _timers.map((t) {
+            final bgColor = Color(t['color'] as int);
+            final opacity = (t['opacity'] as num?)?.toDouble() ?? 0.7;
+            final idx = _timers.indexOf(t);
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: idx < _timers.length - 1 ? 6 : 0,
               ),
-            ),
-          );
-        }).toList(),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _toggle(t['id'] as String),
+                onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: bgColor.withValues(alpha: opacity),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  child: _TimerContent(data: t, time: _timeFor(t)),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
