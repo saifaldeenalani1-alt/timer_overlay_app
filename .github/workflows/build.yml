@@ -24,10 +24,11 @@ jobs:
           cp -r temp_project/ios timer_overlay_app/ 2>/dev/null || true
           cp -r temp_project/web timer_overlay_app/ 2>/dev/null || true
 
-      - name: Add overlay permissions to AndroidManifest
+      - name: Add overlay permissions and service to AndroidManifest
         run: |
           cd android/app/src/main
-          sed -i 's|</manifest>|<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>\n<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n</manifest>|' AndroidManifest.xml
+          sed -i 's|</manifest>|<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>\n<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n<uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>\n</manifest>|' AndroidManifest.xml
+          sed -i 's|</application>|<service android:name="flutter.overlay.window.flutter_overlay_window.OverlayService" android:exported="false" android:foregroundServiceType="specialUse">\n<property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="floating timer overlay"/>\n</service>\n</application>|' AndroidManifest.xml
 
       - name: Copy home screen widget files
         run: |
