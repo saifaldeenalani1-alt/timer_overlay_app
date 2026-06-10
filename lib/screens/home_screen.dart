@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_custom_overlay/flutter_custom_overlay.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import '../models/timer_item.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _checkPermission();
-    _overlaySub = FlutterCustomOverlay.overlayStream.listen(_onOverlayMessage);
+    _overlaySub = FlutterOverlayWindow.overlayListener.listen(_onOverlayMessage);
   }
 
   @override
@@ -53,8 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _checkPermission() async {
-    if (!await FlutterCustomOverlay.hasOverlayPermission()) {
-      await FlutterCustomOverlay.requestOverlayPermission();
+    if (!await FlutterOverlayWindow.isPermissionGranted()) {
+      await FlutterOverlayWindow.requestPermission();
     }
   }
 
@@ -63,7 +63,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _doRestart();
   }
 
-  int _overlayWidth() => 400;
+  int _overlayWidth() {
+    return 500;
+  }
 
   int _overlayHeight() {
     final visible = _timers.where((t) => t.showInOverlay).toList();
@@ -95,27 +97,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _pushDataToOverlay() {
     try {
-      FlutterCustomOverlay.shareData(_overlayData());
+      FlutterOverlayWindow.shareData(_overlayData());
     } catch (_) {}
   }
 
   Future<void> _doRestart() async {
     final visible = _timers.where((t) => t.showInOverlay).toList();
     if (visible.isEmpty) {
-      await FlutterCustomOverlay.closeOverlay();
+      await FlutterOverlayWindow.closeOverlay();
       setState(() => _overlayActive = false);
       return;
     }
-    await FlutterCustomOverlay.closeOverlay();
+    await FlutterOverlayWindow.closeOverlay();
     await Future.delayed(const Duration(milliseconds: 150));
-    final ok = await FlutterCustomOverlay.showOverlay(
-      config: OverlayConfig(
-        width: _overlayWidth(),
-        height: _overlayHeight(),
-        isDraggable: true,
-        alignment: OverlayAlignment.topCenter,
-      ),
-      data: _overlayData(),
+    final ok = await FlutterOverlayWindow.showOverlay(
+      height: _overlayHeight(),
+      width: _overlayWidth(),
+      enableDrag: true,
+      alignment: OverlayAlignment.topCenter,
     );
     if (ok) {
       setState(() => _overlayActive = true);
@@ -128,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!_overlayActive) return;
     final visible = _timers.where((t) => t.showInOverlay).toList();
     if (visible.isEmpty) {
-      FlutterCustomOverlay.closeOverlay();
+      FlutterOverlayWindow.closeOverlay();
       setState(() => _overlayActive = false);
     } else {
       _restartOverlay();
@@ -193,14 +192,11 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       return;
     }
-    final ok = await FlutterCustomOverlay.showOverlay(
-      config: OverlayConfig(
-        width: _overlayWidth(),
-        height: _overlayHeight(),
-        isDraggable: true,
-        alignment: OverlayAlignment.topCenter,
-      ),
-      data: _overlayData(),
+    final ok = await FlutterOverlayWindow.showOverlay(
+      height: _overlayHeight(),
+      width: _overlayWidth(),
+      enableDrag: true,
+      alignment: OverlayAlignment.topCenter,
     );
     if (ok) {
       setState(() => _overlayActive = true);
@@ -299,11 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.black87.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.play_arrow, color: textColor, size: fontSize * 0.9),
-                    const SizedBox(width: 6),
-                    Text('00:00:00', style: TextStyle(color: textColor, fontSize: fontSize, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                  ]),
+                  child: Text('00:00:00', style: TextStyle(color: textColor, fontSize: fontSize, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                 ),
               ],
             ),
