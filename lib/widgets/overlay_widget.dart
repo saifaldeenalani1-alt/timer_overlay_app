@@ -104,18 +104,34 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     if (_timers.isEmpty) return const SizedBox.shrink();
     return Material(
       type: MaterialType.transparency,
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: _timers.map((t) => GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => _toggle(t['id'] as String),
-          onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
-          child: Container(
-            height: double.infinity,
-            alignment: Alignment.center,
-            child: _TimerContent(data: t, time: _timeFor(t)),
-          ),
-        )).toList(),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _timers.map((t) {
+          final fs = (t['fontSize'] as num?)?.toDouble() ?? 16.0;
+          final bgColor = Color(t['color'] as int);
+          final opacity = (t['opacity'] as num?)?.toDouble() ?? 0.7;
+          final h = (fs * 1.5 + 20).round().clamp(48, 120);
+          final idx = _timers.indexOf(t);
+          return Padding(
+            padding: EdgeInsets.only(top: idx > 0 ? 4 : 0),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _toggle(t['id'] as String),
+              onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
+              child: Container(
+                height: h.toDouble(),
+                decoration: BoxDecoration(
+                  color: bgColor.withValues(alpha: opacity),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                alignment: Alignment.centerLeft,
+                child: _TimerContent(data: t, time: _timeFor(t)),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -134,27 +150,24 @@ class _TimerContent extends StatelessWidget {
     final finished = data['finished'] as bool? ?? false;
     final fontSize = (data['fontSize'] as num?)?.toDouble() ?? 16.0;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
-            color: fgColor, size: fontSize * 0.9,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
+          color: fgColor, size: fontSize * 0.9,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          time,
+          style: TextStyle(
+            color: fgColor,
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'monospace',
           ),
-          const SizedBox(width: 6),
-          Text(
-            time,
-            style: TextStyle(
-              color: fgColor,
-              fontSize: fontSize,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'monospace',
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
