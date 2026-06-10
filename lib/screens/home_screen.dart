@@ -67,13 +67,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _overlayHeight() {
     final visible = _timers.where((t) => t.showInOverlay).toList();
-    if (visible.isEmpty) return 80;
+    if (visible.isEmpty) return 100;
     int total = 0;
     for (final t in visible) {
-      total += (t.fontSize * 2 + 50).round();
+      total += (t.fontSize * 3 + 80).round();
     }
-    total += (visible.length - 1) * 8;
-    return total.clamp(80, 800);
+    total += (visible.length - 1) * 12;
+    return total.clamp(100, 1200);
   }
 
   void _startStopTimer() {
