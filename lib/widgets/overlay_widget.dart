@@ -104,54 +104,66 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     if (_timers.isEmpty) return const SizedBox.shrink();
     return Material(
       type: MaterialType.transparency,
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: _timers.map((t) {
-          final fs = (t['fontSize'] as num?)?.toDouble() ?? 16.0;
           final bgColor = Color(t['color'] as int);
-          final fgColor = Color(t['textColor'] as int);
           final opacity = (t['opacity'] as num?)?.toDouble() ?? 0.7;
-          final running = t['running'] as bool? ?? false;
-          final finished = t['finished'] as bool? ?? false;
-          final time = _timeFor(t);
           final idx = _timers.indexOf(t);
-
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _toggle(t['id'] as String),
-            onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
-            child: Container(
-              margin: EdgeInsets.only(right: idx < _timers.length - 1 ? 6 : 0),
-              decoration: BoxDecoration(
-                color: bgColor.withValues(alpha: opacity),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              alignment: Alignment.center,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
-                    color: fgColor, size: fs * 0.9,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    time,
-                    style: TextStyle(
-                      color: fgColor,
-                      fontSize: fs,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ],
+          return Padding(
+            padding: EdgeInsets.only(bottom: idx < _timers.length - 1 ? 4 : 0),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _toggle(t['id'] as String),
+              onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: bgColor.withValues(alpha: opacity),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                child: _TimerContent(data: t, time: _timeFor(t)),
               ),
             ),
           );
         }).toList(),
       ),
+    );
+  }
+}
+
+class _TimerContent extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final String time;
+
+  const _TimerContent({required this.data, required this.time});
+
+  @override
+  Widget build(BuildContext context) {
+    final fgColor = Color(data['textColor'] as int);
+    final running = data['running'] as bool? ?? false;
+    final finished = data['finished'] as bool? ?? false;
+    final fontSize = (data['fontSize'] as num?)?.toDouble() ?? 16.0;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
+          color: fgColor, size: fontSize * 0.9,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          time,
+          style: TextStyle(
+            color: fgColor,
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'monospace',
+          ),
+        ),
+      ],
     );
   }
 }
