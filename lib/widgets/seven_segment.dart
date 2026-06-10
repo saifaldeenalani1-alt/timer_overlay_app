@@ -16,7 +16,7 @@ class SevenSegmentDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      size: Size(text.length * fontSize * 0.55, fontSize * 1.3),
+      size: Size(text.length * fontSize * 0.8, fontSize * 1.5),
       painter: _SevenSegPainter(text: text, color: color, fontSize: fontSize),
     );
   }
@@ -44,8 +44,8 @@ class _SevenSegPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final charW = fontSize * 0.55;
-    final charH = fontSize * 1.3;
+    final charW = fontSize * 0.8;
+    final charH = fontSize * 1.5;
 
     for (int i = 0; i < text.length; i++) {
       final ch = text[i];
