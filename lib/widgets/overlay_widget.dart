@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_custom_overlay/flutter_custom_overlay.dart';
+import '../widgets/seven_segment.dart';
 
 class OverlayWidget extends StatefulWidget {
   const OverlayWidget({super.key});
@@ -154,14 +155,10 @@ class _TimerContent extends StatelessWidget {
           color: fgColor, size: fontSize * 0.9,
         ),
         const SizedBox(width: 6),
-        Text(
-          time,
-          style: TextStyle(
-            color: fgColor,
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'monospace',
-          ),
+        SevenSegmentDisplay(
+          text: time,
+          color: fgColor,
+          fontSize: fontSize,
         ),
       ],
     );
