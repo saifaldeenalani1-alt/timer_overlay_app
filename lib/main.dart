@@ -8,10 +8,7 @@ void overlayMain() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: Scaffold(
-      backgroundColor: Colors.transparent,
-      body: OverlayWidget(),
-    ),
+    home: OverlayWidget(),
   ));
 }
 
