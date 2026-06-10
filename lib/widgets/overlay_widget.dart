@@ -102,15 +102,14 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   @override
   Widget build(BuildContext context) {
     if (_timers.isEmpty) return const SizedBox.shrink();
-    return Row(
+    return Material(type: MaterialType.transparency, child: Row(
       mainAxisSize: MainAxisSize.min,
       children: _timers.map((t) => GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _toggle(t['id'] as String),
         onLongPress: () => _confirmRemove(t['id'] as String, t['name'] as String),
         child: Container(height: double.infinity, alignment: Alignment.center, child: _TimerContent(data: t, time: _timeFor(t))),
-      )).toList(),
-    );
+      )).toList(),)
   }
 }
 
