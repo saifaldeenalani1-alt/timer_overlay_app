@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_custom_overlay/flutter_custom_overlay.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 class OverlayWidget extends StatefulWidget {
   const OverlayWidget({super.key});
@@ -17,8 +17,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   @override
   void initState() {
     super.initState();
-    OverlayMessenger.listen();
-    _sub = OverlayMessenger.onDataReceived.listen(_onData);
+    _sub = FlutterOverlayWindow.overlayListener.listen(_onData);
   }
 
   @override
@@ -62,7 +61,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   }
 
   void _toggle(String id) {
-    OverlayMessenger.sendToMainApp({'action': 'toggle', 'id': id});
+    FlutterOverlayWindow.shareData({'action': 'toggle', 'id': id});
   }
 
   void _confirmRemove(String id, String name) {
@@ -76,7 +75,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              OverlayMessenger.sendToMainApp({'action': 'remove', 'id': id});
+              FlutterOverlayWindow.shareData({'action': 'remove', 'id': id});
             },
             child: const Text('Remove', style: TextStyle(color: Colors.red)),
           ),
@@ -103,7 +102,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   Widget build(BuildContext context) {
     if (_timers.isEmpty) return const SizedBox.shrink();
     return Material(
-      type: MaterialType.transparency,
+      color: Colors.transparent,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,7 +122,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
                   color: bgColor.withValues(alpha: opacity),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 child: _TimerContent(data: t, time: _timeFor(t)),
               ),
             ),
