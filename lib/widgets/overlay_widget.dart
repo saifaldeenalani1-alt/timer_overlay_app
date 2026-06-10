@@ -143,29 +143,16 @@ class _TimerContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fgColor = Color(data['textColor'] as int);
-    final running = data['running'] as bool? ?? false;
-    final finished = data['finished'] as bool? ?? false;
     final fontSize = (data['fontSize'] as num?)?.toDouble() ?? 16.0;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          finished ? Icons.notifications_active : (running ? Icons.pause : Icons.play_arrow),
-          color: fgColor,
-          size: fontSize,
-        ),
-        const SizedBox(width: 8),
-        Text(
-          time,
-          style: TextStyle(
-            color: fgColor,
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'monospace',
-          ),
-        ),
-      ],
+    return Text(
+      time,
+      style: TextStyle(
+        color: fgColor,
+        fontSize: fontSize,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'monospace',
+      ),
     );
   }
 }
