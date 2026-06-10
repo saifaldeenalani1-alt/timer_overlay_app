@@ -126,7 +126,7 @@ class _OverlayWidgetState extends State<OverlayWidget> {
                     color: bgColor.withValues(alpha: opacity),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   child: _TimerContent(data: t, time: _timeFor(t)),
                 ),
               ),
