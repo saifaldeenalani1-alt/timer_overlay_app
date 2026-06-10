@@ -128,7 +128,7 @@ class _TimerContent extends StatelessWidget {
     final fontSize = (data['fontSize'] as num?)?.toDouble() ?? 16.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
