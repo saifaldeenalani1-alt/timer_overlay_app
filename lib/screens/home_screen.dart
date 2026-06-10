@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final x = event['x'] as int? ?? 0;
         final y = event['y'] as int? ?? 0;
         try {
-          FlutterOverlayWindow.moveOverlay(OverlayPosition(x, y));
+          FlutterOverlayWindow.moveOverlay(OverlayPosition(x.toDouble(), y.toDouble()));
         } catch (_) {}
       }
     }
