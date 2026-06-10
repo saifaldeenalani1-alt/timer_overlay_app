@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_custom_overlay/flutter_custom_overlay.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import '../models/timer_item.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _checkPermission();
-    _overlaySub = FlutterCustomOverlay.overlayStream.listen(_onOverlayMessage);
+    _overlaySub = FlutterOverlayWindow.overlayListener.listen(_onOverlayMessage);
   }
 
   @override
@@ -46,7 +46,9 @@ class _HomeScreenState extends State<HomeScreen> {
       } else if (action == 'drag') {
         final x = event['x'] as int? ?? 0;
         final y = event['y'] as int? ?? 0;
-        try { FlutterCustomOverlay.updatePosition(x: x, y: y); } catch (_) {}
+        try {
+          FlutterOverlayWindow.moveOverlay(OverlayPosition(x, y));
+        } catch (_) {}
       }
     }
   }
@@ -78,8 +80,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _checkPermission() async {
-    if (!await FlutterCustomOverlay.hasOverlayPermission()) {
-      await FlutterCustomOverlay.requestOverlayPermission();
+    if (!await FlutterOverlayWindow.isPermissionGranted()) {
+      await FlutterOverlayWindow.requestPermission();
     }
   }
 
@@ -120,40 +122,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _pushDataToOverlay() {
     try {
-      FlutterCustomOverlay.shareData(_overlayData());
+      FlutterOverlayWindow.shareData(_overlayData());
     } catch (_) {}
   }
 
   Future<void> _doRestart() async {
     final visible = _timers.where((t) => t.showInOverlay).toList();
     if (visible.isEmpty) {
-      await FlutterCustomOverlay.closeOverlay();
+      await FlutterOverlayWindow.closeOverlay();
       setState(() => _overlayActive = false);
       return;
     }
-    await FlutterCustomOverlay.closeOverlay();
+    await FlutterOverlayWindow.closeOverlay();
     await Future.delayed(const Duration(milliseconds: 150));
-    final ok = await FlutterCustomOverlay.showOverlay(
-      config: OverlayConfig(
-        width: _overlayWidth(),
-        height: _overlayHeight(),
-        isDraggable: false,
-        alignment: OverlayAlignment.topCenter,
-      ),
-      data: _overlayData(),
+    await FlutterOverlayWindow.showOverlay(
+      height: _overlayHeight(),
+      width: _overlayWidth(),
+      enableDrag: true,
+      alignment: OverlayAlignment.topCenter,
     );
-    if (ok) {
-      setState(() => _overlayActive = true);
-      await Future.delayed(const Duration(milliseconds: 800));
-      _pushDataToOverlay();
-    }
+    setState(() => _overlayActive = true);
+    await Future.delayed(const Duration(milliseconds: 800));
+    _pushDataToOverlay();
   }
 
   void _checkAutoCloseOverlay() {
     if (!_overlayActive) return;
     final visible = _timers.where((t) => t.showInOverlay).toList();
     if (visible.isEmpty) {
-      FlutterCustomOverlay.closeOverlay();
+      FlutterOverlayWindow.closeOverlay();
       setState(() => _overlayActive = false);
     } else {
       _restartOverlay();
@@ -218,24 +215,15 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       return;
     }
-    final ok = await FlutterCustomOverlay.showOverlay(
-      config: OverlayConfig(
-        width: _overlayWidth(),
-        height: _overlayHeight(),
-        isDraggable: false,
-        alignment: OverlayAlignment.topCenter,
-      ),
-      data: _overlayData(),
+    await FlutterOverlayWindow.showOverlay(
+      height: _overlayHeight(),
+      width: _overlayWidth(),
+      enableDrag: true,
+      alignment: OverlayAlignment.topCenter,
     );
-    if (ok) {
-      setState(() => _overlayActive = true);
-      await Future.delayed(const Duration(milliseconds: 800));
-      _pushDataToOverlay();
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Permission not granted or overlay failed')),
-      );
-    }
+    setState(() => _overlayActive = true);
+    await Future.delayed(const Duration(milliseconds: 800));
+    _pushDataToOverlay();
   }
 
   void _addTimer() => _showTimerDialog();
@@ -324,11 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.black87.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.play_arrow, color: textColor, size: fontSize * 0.9),
-                    const SizedBox(width: 6),
-                    Text('00:00:00', style: TextStyle(color: textColor, fontSize: fontSize, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                  ]),
+                  child: Text('00:00:00', style: TextStyle(color: textColor, fontSize: fontSize, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
                 ),
               ],
             ),
