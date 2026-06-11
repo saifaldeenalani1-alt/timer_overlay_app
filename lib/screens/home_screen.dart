@@ -137,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _moveOverlayToPosition() {
     try {
-      FlutterOverlayWindow.moveOverlay(OverlayPosition(_overlayX.round(), _overlayY.round()));
+      FlutterOverlayWindow.moveOverlay(OverlayPosition(_overlayX, _overlayY));
     } catch (_) {}
   }
 
