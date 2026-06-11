@@ -139,7 +139,6 @@ class _HomeScreenState extends State<HomeScreen> {
       height: _overlayHeight(),
       width: _overlayWidth(),
       enableDrag: true,
-      alignment: OverlayAlignment.topCenter,
     );
     setState(() => _overlayActive = true);
     await Future.delayed(const Duration(milliseconds: 800));
@@ -219,7 +218,6 @@ class _HomeScreenState extends State<HomeScreen> {
       height: _overlayHeight(),
       width: _overlayWidth(),
       enableDrag: true,
-      alignment: OverlayAlignment.topCenter,
     );
     setState(() => _overlayActive = true);
     await Future.delayed(const Duration(milliseconds: 800));
