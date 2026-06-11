@@ -16,6 +16,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _overlayActive = false;
   Timer? _updateTimer;
   StreamSubscription? _overlaySub;
+  double _overlayX = 0;
+  double _overlayY = 0;
 
   @override
   void initState() {
@@ -44,10 +46,15 @@ class _HomeScreenState extends State<HomeScreen> {
       } else if (action == 'request_remove' && id != null) {
         _showRemoveConfirm(id, event['name'] as String? ?? '');
       } else if (action == 'drag') {
-        final x = event['x'] as int? ?? 0;
-        final y = event['y'] as int? ?? 0;
+        final dx = (event['dx'] as num?)?.toDouble() ?? 0;
+        final dy = (event['dy'] as num?)?.toDouble() ?? 0;
+        final size = MediaQuery.of(context).size;
+        final ow = _overlayWidth().toDouble();
+        final oh = _overlayHeight().toDouble();
+        _overlayX = (_overlayX + dx).clamp(0, size.width - ow);
+        _overlayY = (_overlayY + dy).clamp(0, size.height - oh);
         try {
-          FlutterOverlayWindow.moveOverlay(OverlayPosition(x.toDouble(), y.toDouble()));
+          FlutterOverlayWindow.moveOverlay(OverlayPosition(_overlayX, _overlayY));
         } catch (_) {}
       }
     }
@@ -94,13 +101,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _overlayHeight() {
     final visible = _timers.where((t) => t.showInOverlay).toList();
-    if (visible.isEmpty) return 150;
-    int total = 0;
+    if (visible.isEmpty) return 60;
+    double maxFs = 16;
     for (final t in visible) {
-      total += (t.fontSize * 4 + 150).round();
+      if (t.fontSize > maxFs) maxFs = t.fontSize;
     }
-    total += (visible.length - 1) * 20;
-    return total.clamp(150, 2000);
+    return (maxFs * 2 + 50).round().clamp(60, 200);
   }
 
   void _startStopTimer() {
@@ -133,15 +139,20 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _overlayActive = false);
       return;
     }
+    final size = MediaQuery.of(context).size;
+    final ow = _overlayWidth().toDouble();
+    final oh = _overlayHeight().toDouble();
+    _overlayX = (size.width - ow) / 2;
+    _overlayY = 0;
     await FlutterOverlayWindow.closeOverlay();
     await Future.delayed(const Duration(milliseconds: 150));
     await FlutterOverlayWindow.showOverlay(
-      height: _overlayHeight(),
-      width: _overlayWidth(),
-      enableDrag: true,
+      height: oh.toInt(),
+      width: ow.toInt(),
+      enableDrag: false,
+      startPosition: OverlayPosition(_overlayX, _overlayY),
     );
     setState(() => _overlayActive = true);
-    await Future.delayed(const Duration(milliseconds: 800));
     _pushDataToOverlay();
   }
 
@@ -173,6 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     setState(() {});
     _startStopTimer();
+    if (_overlayActive) _pushDataToOverlay();
   }
 
   void _toggleTimer(TimerItem t) {
@@ -185,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
     _startStopTimer();
     if (_overlayActive) {
-      _restartOverlay();
+      _pushDataToOverlay();
     } else if (_timers.any((x) => x.showInOverlay)) {
       _showOverlay();
     }
@@ -201,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
     t.elapsed = 0;
     t.cancelTimer();
     setState(() {});
-    if (_overlayActive) _restartOverlay();
+    if (_overlayActive) _pushDataToOverlay();
   }
 
   Future<void> _showOverlay() async {
@@ -214,13 +226,18 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       return;
     }
+    final size = MediaQuery.of(context).size;
+    final ow = _overlayWidth().toDouble();
+    final oh = _overlayHeight().toDouble();
+    _overlayX = (size.width - ow) / 2;
+    _overlayY = 0;
     await FlutterOverlayWindow.showOverlay(
-      height: _overlayHeight(),
-      width: _overlayWidth(),
-      enableDrag: true,
+      height: oh.toInt(),
+      width: ow.toInt(),
+      enableDrag: false,
+      startPosition: OverlayPosition(_overlayX, _overlayY),
     );
     setState(() => _overlayActive = true);
-    await Future.delayed(const Duration(milliseconds: 800));
     _pushDataToOverlay();
   }
 
