@@ -12,9 +12,6 @@ class OverlayWidget extends StatefulWidget {
 class _OverlayWidgetState extends State<OverlayWidget> {
   List<Map<String, dynamic>> _timers = [];
   StreamSubscription? _sub;
-  Timer? _localTick;
-  double _dragX = 0;
-  double _dragY = 0;
 
   @override
   void initState() {
@@ -25,7 +22,6 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   @override
   void dispose() {
     _sub?.cancel();
-    _localTick?.cancel();
     super.dispose();
   }
 
@@ -33,33 +29,9 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     if (event is Map<String, dynamic> && event['action'] == 'state') {
       final list = event['timers'] as List<dynamic>?;
       if (list != null) {
-        setState(() {
-          _timers = list.cast<Map<String, dynamic>>();
-          _manageTick();
-        });
+        setState(() => _timers = list.cast<Map<String, dynamic>>());
       }
     }
-  }
-
-  void _manageTick() {
-    final running = _timers.any((t) => t['running'] as bool? ?? false);
-    if (running && _localTick == null) {
-      _localTick = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
-    } else if (!running && _localTick != null) {
-      _localTick?.cancel();
-      _localTick = null;
-    }
-  }
-
-  void _tick() {
-    setState(() {
-      for (final t in _timers) {
-        if (t['running'] as bool? ?? false) {
-          final e = (t['elapsed'] as num?)?.toInt() ?? 0;
-          t['elapsed'] = e + 1;
-        }
-      }
-    });
   }
 
   void _toggle(String id) {
@@ -95,37 +67,32 @@ class _OverlayWidgetState extends State<OverlayWidget> {
         });
       },
       onPanUpdate: (d) {
-        _dragX += d.delta.dx;
-        _dragY += d.delta.dy;
         FlutterOverlayWindow.shareData({
           'action': 'drag',
-          'x': _dragX.round(),
-          'y': _dragY.round(),
+          'dx': d.delta.dx.round(),
+          'dy': d.delta.dy.round(),
         });
       },
-      child: Material(
-        type: MaterialType.transparency,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: _timers.map((t) {
-            final bgColor = Color(t['color'] as int);
-            final opacity = (t['opacity'] as num?)?.toDouble() ?? 0.7;
-            final idx = _timers.indexOf(t);
-            return Padding(
-              padding: EdgeInsets.only(bottom: idx < _timers.length - 1 ? 8 : 0),
-              child: Container(
-                clipBehavior: Clip.none,
-                decoration: BoxDecoration(
-                  color: bgColor.withValues(alpha: opacity),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                child: _TimerContent(data: t, time: _timeFor(t)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _timers.map((t) {
+          final bgColor = Color(t['color'] as int);
+          final opacity = (t['opacity'] as num?)?.toDouble() ?? 0.7;
+          final idx = _timers.indexOf(t);
+          return Padding(
+            padding: EdgeInsets.only(bottom: idx < _timers.length - 1 ? 4 : 0),
+            child: Container(
+              clipBehavior: Clip.none,
+              decoration: BoxDecoration(
+                color: bgColor.withValues(alpha: opacity),
+                borderRadius: BorderRadius.circular(12),
               ),
-            );
-          }).toList(),
-        ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: _TimerContent(data: t, time: _timeFor(t)),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
