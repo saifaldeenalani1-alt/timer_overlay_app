@@ -46,18 +46,24 @@ class _HomeScreenState extends State<HomeScreen> {
       } else if (action == 'request_remove' && id != null) {
         _showRemoveConfirm(id, event['name'] as String? ?? '');
       } else if (action == 'drag') {
-        final dx = (event['dx'] as num?)?.toDouble() ?? 0;
-        final dy = (event['dy'] as num?)?.toDouble() ?? 0;
-        final size = MediaQuery.of(context).size;
-        final ow = _overlayWidth().toDouble();
-        final oh = _overlayHeight().toDouble();
-        _overlayX = (_overlayX + dx).clamp(0, size.width - ow);
-        _overlayY = (_overlayY + dy).clamp(0, size.height - oh);
-        try {
-          FlutterOverlayWindow.moveOverlay(OverlayPosition(_overlayX, _overlayY));
-        } catch (_) {}
+        _handleDrag(event);
       }
     }
+  }
+
+  void _handleDrag(Map<String, dynamic> event) {
+    final dx = (event['dx'] as num?)?.toDouble() ?? 0;
+    final dy = (event['dy'] as num?)?.toDouble() ?? 0;
+    final view = WidgetsBinding.instance.platformDispatcher.views.first;
+    final screenW = view.physicalSize.width / view.devicePixelRatio;
+    final screenH = view.physicalSize.height / view.devicePixelRatio;
+    final ow = _overlayWidth().toDouble();
+    final oh = _overlayHeight().toDouble();
+    _overlayX = (_overlayX + dx).clamp(0.0, screenW - ow);
+    _overlayY = (_overlayY + dy).clamp(0.0, screenH - oh);
+    try {
+      FlutterOverlayWindow.moveOverlay(OverlayPosition(_overlayX, _overlayY));
+    } catch (_) {}
   }
 
   void _showRemoveConfirm(String id, String name) {
@@ -97,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _doRestart();
   }
 
-  int _overlayWidth() => 400;
+  int _overlayWidth() => 500;
 
   int _overlayHeight() {
     final visible = _timers.where((t) => t.showInOverlay).toList();
@@ -106,7 +112,10 @@ class _HomeScreenState extends State<HomeScreen> {
     for (final t in visible) {
       if (t.fontSize > maxFs) maxFs = t.fontSize;
     }
-    return (maxFs * 2 + 50).round().clamp(60, 200);
+    final padding = 10 * 2;
+    final perTimer = maxFs * 1.4 + padding;
+    final total = perTimer * visible.length;
+    return total.round().clamp(60, 300);
   }
 
   void _startStopTimer() {
@@ -126,10 +135,24 @@ class _HomeScreenState extends State<HomeScreen> {
     };
   }
 
+  void _moveOverlayToPosition() {
+    try {
+      FlutterOverlayWindow.moveOverlay(OverlayPosition(_overlayX.round(), _overlayY.round()));
+    } catch (_) {}
+  }
+
   void _pushDataToOverlay() {
     try {
       FlutterOverlayWindow.shareData(_overlayData());
     } catch (_) {}
+  }
+
+  void _initOverlayPosition() {
+    final view = WidgetsBinding.instance.platformDispatcher.views.first;
+    final screenW = view.physicalSize.width / view.devicePixelRatio;
+    final ow = _overlayWidth().toDouble();
+    _overlayX = (screenW - ow) / 2;
+    _overlayY = 0;
   }
 
   Future<void> _doRestart() async {
@@ -139,20 +162,17 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _overlayActive = false);
       return;
     }
-    final size = MediaQuery.of(context).size;
-    final ow = _overlayWidth().toDouble();
-    final oh = _overlayHeight().toDouble();
-    _overlayX = (size.width - ow) / 2;
-    _overlayY = 0;
+    _initOverlayPosition();
     await FlutterOverlayWindow.closeOverlay();
     await Future.delayed(const Duration(milliseconds: 150));
     await FlutterOverlayWindow.showOverlay(
-      height: oh.toInt(),
-      width: ow.toInt(),
+      height: _overlayHeight(),
+      width: _overlayWidth(),
       enableDrag: false,
-      startPosition: OverlayPosition(_overlayX, _overlayY),
     );
     setState(() => _overlayActive = true);
+    await Future.delayed(const Duration(milliseconds: 200));
+    _moveOverlayToPosition();
     _pushDataToOverlay();
   }
 
@@ -226,18 +246,15 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       return;
     }
-    final size = MediaQuery.of(context).size;
-    final ow = _overlayWidth().toDouble();
-    final oh = _overlayHeight().toDouble();
-    _overlayX = (size.width - ow) / 2;
-    _overlayY = 0;
+    _initOverlayPosition();
     await FlutterOverlayWindow.showOverlay(
-      height: oh.toInt(),
-      width: ow.toInt(),
+      height: _overlayHeight(),
+      width: _overlayWidth(),
       enableDrag: false,
-      startPosition: OverlayPosition(_overlayX, _overlayY),
     );
     setState(() => _overlayActive = true);
+    await Future.delayed(const Duration(milliseconds: 200));
+    _moveOverlayToPosition();
     _pushDataToOverlay();
   }
 

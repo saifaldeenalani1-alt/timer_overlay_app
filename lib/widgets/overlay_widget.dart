@@ -34,8 +34,19 @@ class _OverlayWidgetState extends State<OverlayWidget> {
     }
   }
 
-  void _toggle(String id) {
-    FlutterOverlayWindow.shareData({'action': 'toggle', 'id': id});
+  void _toggle() {
+    if (_timers.isEmpty) return;
+    FlutterOverlayWindow.shareData({'action': 'toggle', 'id': _timers.first['id'] as String});
+  }
+
+  void _requestRemove() {
+    if (_timers.isEmpty) return;
+    final t = _timers.first;
+    FlutterOverlayWindow.shareData({
+      'action': 'request_remove',
+      'id': t['id'] as String,
+      'name': t['name'] as String,
+    });
   }
 
   static String _fmt(int d) {
@@ -55,44 +66,45 @@ class _OverlayWidgetState extends State<OverlayWidget> {
   @override
   Widget build(BuildContext context) {
     if (_timers.isEmpty) return const SizedBox.shrink();
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _toggle(_timers.first['id'] as String),
-      onLongPress: () {
-        final t = _timers.first;
-        FlutterOverlayWindow.shareData({
-          'action': 'request_remove',
-          'id': t['id'] as String,
-          'name': t['name'] as String,
-        });
-      },
-      onPanUpdate: (d) {
-        FlutterOverlayWindow.shareData({
-          'action': 'drag',
-          'dx': d.delta.dx.round(),
-          'dy': d.delta.dy.round(),
-        });
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: _timers.map((t) {
-          final bgColor = Color(t['color'] as int);
-          final opacity = (t['opacity'] as num?)?.toDouble() ?? 0.7;
-          final idx = _timers.indexOf(t);
-          return Padding(
-            padding: EdgeInsets.only(bottom: idx < _timers.length - 1 ? 4 : 0),
-            child: Container(
-              clipBehavior: Clip.none,
-              decoration: BoxDecoration(
-                color: bgColor.withValues(alpha: opacity),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: _TimerContent(data: t, time: _timeFor(t)),
+    return Material(
+      color: Colors.transparent,
+      child: Listener(
+        onPointerDown: (e) {
+          FlutterOverlayWindow.shareData({
+            'action': 'drag_start',
+            'dx': e.position.dx,
+            'dy': e.position.dy,
+          });
+        },
+        onPointerMove: (e) {
+          FlutterOverlayWindow.shareData({
+            'action': 'drag',
+            'dx': e.delta.dx,
+            'dy': e.delta.dy,
+          });
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _toggle,
+          onLongPress: _requestRemove,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.black87.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(16),
             ),
-          );
-        }).toList(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: _timers.map((t) {
+                final idx = _timers.indexOf(t);
+                return Padding(
+                  padding: EdgeInsets.only(left: idx > 0 ? 8 : 0),
+                  child: _TimerContent(data: t, time: _timeFor(t)),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
       ),
     );
   }
